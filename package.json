@@ -1,0 +1,25 @@
+{
+  "name": "astro-website",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^4.0.0",
+    "@astrojs/react": "^4.2.4",
+    "@astrojs/tailwind": "^6.0.2",
+    "@iconify-json/lucide": "^1.2.114",
+    "@rollup/rollup-win32-x64-msvc": "^4.62.2",
+    "@tailwindcss/oxide-win32-x64-msvc": "^4.3.1",
+    "@tailwindcss/typography": "^0.5.20",
+    "astro": "^5.7.10",
+    "astro-icon": "^1.1.5",
+    "lightningcss-win32-x64-msvc": "^1.32.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^3.4.19"
+  }
+}

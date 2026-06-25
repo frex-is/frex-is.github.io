@@ -1,0 +1,30 @@
+---
+import { SITE } from "@config/site"
+import { NAVIGATION, type NavLink } from "@config/navigation"
+---
+
+<header class="sticky top-0 z-50 backdrop-blur-md border-b border-border bg-surface/80">
+    <nav 
+        class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between" 
+        aria-label="Main navigation"
+    >
+        <a 
+            href="/" 
+            class="font-bold text-sm text-text-primary no-underline hover:text-accent-cyan transition-colors" 
+            aria-label="Home"
+        >
+            {SITE.title}
+        </a>
+
+        <div class="flex items-center gap-6">
+            {NAVIGATION.links.map((link: NavLink) => (
+                <a 
+                    href={link.href}
+                    class="text-xs text-text-muted no-underline hover:text-text-secondary transition-colors uppercase tracking-wider font-semibold"
+                >
+                    {link.label}
+                </a>
+            ))}
+        </div>
+    </nav>
+</header>

@@ -1,0 +1,80 @@
+---
+title: "Contexte engineering"
+description: "pataplouf le riplouf"
+date: "2026-06-01"
+readingTime: "25"
+tags:
+- Contexte-engineering
+- AI
+tableOfContent:
+- id: "intro"
+  label: "Introduction"
+
+- id: "context"
+  label: "1. Le Contexte"
+  children:
+    - id: "Anatomie"
+      label: "Anatomie"
+
+- id: "limit"
+  label: "2. Limit & dégradation"
+
+- id: "bruit"
+  label: "3. Bruit Décisionel"
+
+- id: "archi"
+  label: "4. Architecture & Performance"
+
+- id: "compaction"
+  label: "5. Compaction"
+  children:
+    - id: "deletion"
+      label: "Suppression"
+    - id: "resume"
+      label: "Résumé"
+    - id: "selection"
+      label: "Selection"
+
+- id: "rag"
+  label: "6. RAG"
+
+- id: "rationalisation"
+  label: "7. Rationalisation des Tools"
+
+- id: "agent"
+  label: "8. Multi-Agents"
+
+- id: "synthese"
+  label: "9. Synthèse"
+
+- id: "references"
+  label: "10. Références"
+---
+import SectionHeader from '@components/blog/SectionHeader.astro'
+import Text from '@components/base/text.astro'
+import TagList from '@components/base/TagList.astro'
+import SectionTitle from '@components/blog/SectionTitle.astro'
+import HighLight from '@components/base/Highlight.astro'
+import Note from '@components/base/Note.astro'
+
+
+<SectionHeader sectionId="intro" label="intro" />
+
+<Text>Il y a depuis quelques mois de plus en plus d'outils et de techniques pour développer des applications à l'aide d'agents IA. Cet article fait le point sur les différents outils et techniques que j'ai pu croiser, et partage mes retours d'expérience sur le développement applicatif assisté par agents IA.</Text>
+
+<TagList tags={[
+  { label: 'IA Agentique' },
+  { label: 'Contexte', variant: 'green' },
+  { label: 'Multi-Agents' },
+  { label: 'RAG', variant: 'purple' },
+  { label: 'Engineering', variant: 'red' },
+]} />
+
+<Note title="Note">
+  Le poste suivant s'appuiera sur [**OpenCode**](https://opencode.ai/) pour les exemples pratiques. Cependant, les concepts et la théorie présentés dans cet article restent applicables à la plupart des modèles de langage modernes, tels que Claude, etc...
+</Note>
+
+<SectionHeader sectionId="context" label="01" />
+
+<SectionTitle>Le contexte : <HighLight accent='green'>mémoire volatile de l'agent</HighLight></SectionTitle>
+

@@ -1,0 +1,37 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import Header from "@components/navigation/Header.astro";
+import ReadingProgressBar from "@components/interactive/ReadingProgressBar";
+
+export interface Props {
+    title: string,
+    description: string,
+    date: string,
+    readingTime: string,
+    tags?: string[],
+}
+
+const { title, description, date, readingTime, tags } = Astro.props
+---
+
+<BaseLayout title={title}>
+    <ReadingProgressBar client:load />
+    
+    <Header />
+
+    <Fragment slot="before-main">
+        <slot name="hero" />
+    </Fragment>
+
+    <div class="max-w-[1200px] mx-auto pl-3 pr-6">
+        <div class="grid grid-cols-12 gap-12">
+            <aside class="col-span-3">
+                <slot name="tableOfContent" />
+            </aside>
+
+            <div class="col-span-9 pb-20">
+                <slot />
+            </div>
+        </div>
+    </div>
+</BaseLayout>

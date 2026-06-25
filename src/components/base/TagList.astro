@@ -1,0 +1,14 @@
+---
+import Tag from '@components/base/Tag.astro'
+import type { TagProps } from '@components/base/Tag.astro'
+
+export interface Props {
+  tags: TagProps[]
+}
+
+const { tags } = Astro.props
+---
+
+<div class="flex flex-wrap gap-2 mb-6">
+  {tags.map(tag => <Tag label={tag.label} variant={tag.variant} />)}
+</div>

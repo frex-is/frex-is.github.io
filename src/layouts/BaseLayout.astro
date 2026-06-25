@@ -1,0 +1,25 @@
+---
+import { SITE } from "@config/site"
+import "../styles/global.css"
+
+export interface Props {
+  title?: string
+}
+
+const { title = SITE.title } = Astro.props
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+  </head>
+
+  <body class="bg-surface text-text-primary font-sans antialiased">
+    <main>
+      <slot />
+    </main>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+---
+export interface Props {
+  accent: keyof typeof accentColors;
+}
+
+const accentColors = {
+  cyan: '#22d3ee',
+  green: '#4ade80',
+  red: '#f87171',
+  yellow: '#fbbf24',
+  purple: '#818cf8',
+}
+
+const { accent } = Astro.props as Props;
+const color = accentColors[accent];
+---
+
+{color ? (
+  <span style={{ color }}><slot /></span>
+) : (
+  <span><slot /></span>
+)}

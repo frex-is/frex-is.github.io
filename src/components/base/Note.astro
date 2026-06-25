@@ -1,0 +1,41 @@
+---
+import { Icon } from 'astro-icon/components'
+
+export type NoteVariant = 'note' | 'info' | 'success' | 'warning' | 'danger'
+
+export interface Props {
+  variant?: NoteVariant
+  title?: string
+}
+
+const { variant = 'note', title } = Astro.props
+
+const variantData: Record<NoteVariant, { accent: string; icon: string }> = {
+  note:    { accent: 'cyan',   icon: 'lucide:file-text' },
+  info:    { accent: 'cyan',   icon: 'lucide:info' },
+  success: { accent: 'green',  icon: 'lucide:check-circle' },
+  warning: { accent: 'yellow', icon: 'lucide:alert-triangle' },
+  danger:  { accent: 'red',    icon: 'lucide:alert-circle' },
+}
+
+const { accent, icon } = variantData[variant]
+---
+
+<div
+  class="flex gap-3 rounded-block border p-4 mx-4 mb-6"
+  class:list={[`bg-accent-${accent}/8 border-accent-${accent}/20`]}
+>
+  <div class={`mt-0.5 shrink-0 text-accent-${accent}`}>
+    <Icon name={icon} class="size-[18px]" />
+  </div>
+  <div class="min-w-0 flex-1">
+    {title && (
+      <p class={`mb-1 text-[13px] font-semibold uppercase tracking-wider text-accent-${accent}`}>
+        {title}
+      </p>
+    )}
+    <div class="text-text-muted text-[15px] leading-[1.8] [&_strong]:text-text-secondary">
+      <slot />
+    </div>
+  </div>
+</div>

@@ -1,0 +1,41 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import ArticleLayout from "@layouts/blog/ArticleLayout.astro";
+import { logger } from "@utils/logger";
+import TableOfContent from '@components/blog/TableOfContent';
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog");
+  const urls: string[] = [];
+
+  const paths = posts.map((post: CollectionEntry<"blog">) => {
+    urls.push(`/blog/${post.slug}`);
+
+    return {
+        params: { slug: post.slug },
+        props: { post },
+    }
+  });
+
+  logger.routes(urls);
+
+  return paths;
+}
+
+const { post } = Astro.props as {
+  post: CollectionEntry<"blog">;
+};
+
+const { Content } = await post.render();
+---
+
+<ArticleLayout
+  title={post.data.title}
+  description={post.data.description}
+  date={post.data.date}
+  readingTime={post.data.readingTime}
+  tags={post.data.tags}
+>
+  <TableOfContent client:load items={post.data.tableOfContent} slot="tableOfContent" />
+  <Content />
+</ArticleLayout>
