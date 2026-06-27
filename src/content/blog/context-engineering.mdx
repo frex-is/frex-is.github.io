@@ -661,6 +661,89 @@ Agrandir la fenêtre de contexte n'améliore pas automatiquement un agent. La qu
 
 <SectionTitle>RAG : <HighLight accent="cyan">Raisonnement & Données</HighLight></SectionTitle>
 
+<Text>Le RAG (<HighLight accent="cyan">Retrieval Augmented Generation</HighLight>) est une <HighLight accent="cyan" bold>architecture de recherche et d'orchestration</HighLight> qui connecte un moteur de recherche (votre base de connaissance) à un moteur de raisonnement (LLM, algorithme de classification, etc.). Cette structure permet à l'IA d'accéder à vos données.</Text>
+
+<Text>En isolant la recherche, cette architecture offre deux avantages majeurs :</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:coins" class="mt-1 shrink-0 size-[18px] text-accent-green" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Économie de token</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">L'agent délègue la fouille de documents à un outil externe optimisé. Il ne reçoit que les extraits strictement nécessaires, évitant d'engorger son contexte avec des fichiers entiers.</p>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:layers" class="mt-1 shrink-0 size-[18px] text-accent-purple" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Polyvalence de source</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">On peut utiliser le RAG pour stocker différents types de documents : texte, vidéo, image, etc.</p>
+    </div>
+  </li>
+</ul>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Utilisateur
+    participant Agent as Agent IA<br/>(Moteur de Raisonnement)
+    box Moteur de Recherche (Externe)
+        participant DB as Base Vectorielle / Outil
+    end
+
+    User->>Agent: "Comment fonctionne l'authentification ?"
+    Note over Agent: Raisonnement :<br/>Je n'ai pas l'info dans mes poids.<br/>Je dois utiliser mon outil.
+
+    Agent->>DB: outil_recherche_code("auth")
+    Note over DB: Fouille & Filtrage :<br/>Extrait uniquement les 5 lignes utiles<br/>(Économie de tokens)
+    DB-->>Agent: Retourne l'extrait pertinent brut
+
+    Note over Agent: Injection du contexte<br/>+ Génération de la réponse
+    Agent-->>User: "Voici comment fonctionne l'auth : [Explication précise]"
+```
+
+<Text>La performance et l'efficacité d'un RAG dépendent entièrement de la complexité de son architecture. Comme le montre <a href="https://blog.starmorph.com/blog/rag-techniques-compared-best-practices-guide" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">cet article</a>, obtenir des réponses de haute qualité implique un compromis entre la latence et le coût financier. De plus, mettre en place un RAG performant demande un effort d'ingénierie (chunking intelligent, gestion des embeddings, ranking, etc.).</Text>
+
+<Text>Ce n'est pas une solution miracle — elle présente des limites :</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:globe" class="mt-1 shrink-0 size-[18px] text-accent-red" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Questions à grand scope</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Demander un résumé de 500 fichiers est inefficace : le RAG est conçu pour extraire des morceaux locaux, pas pour avoir une vue d'ensemble.</p>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:brain" class="mt-1 shrink-0 size-[18px] text-accent-yellow" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Manque de réflexion logique</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Un RAG indexe et restitue de la donnée, il ne réfléchit pas. Connecter des règles logiques éparpillées nécessite de multiples appels et fait chuter les performances.</p>
+    </div>
+  </li>
+</ul>
+
+<Text>Pour le curieux qui voudrait essayer de construire un RAG, voici quelques cookbooks :</Text>
+
+<ul class="space-y-2 my-4 ml-2">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <a href="https://developers.openai.com/cookbook/examples/vector_databases/elasticsearch/elasticsearch-retrieval-augmented-generation#install-packages-and-import-modules" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">OpenAI Cookbook</a>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    <a href="https://platform.claude.com/cookbook/capabilities-retrieval-augmented-generation-guide" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">Claude Cookbook</a>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    <a href="https://deepwiki.com/athina-ai/rag-cookbooks" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">Athina AI RAG Cookbooks</a>
+  </li>
+</ul>
+
+<Note title="À retenir" variant="info">
+  Le RAG est un outil puissant pour économiser des tokens et accéder à des données variées, mais il n'est pas adapté aux tâches nécessitant une <HighLight accent="cyan" bold>vue d'ensemble</HighLight> ou un <HighLight accent="cyan" bold>raisonnement logique transverse</HighLight>.
+</Note>
+
 <SectionHeader sectionId="rationalisation" label="07" />
 
 <SectionTitle>Rationalisation : <HighLight accent="yellow">l'efficience par les tools</HighLight></SectionTitle>

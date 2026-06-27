@@ -17,6 +17,7 @@
     "@tailwindcss/typography": "^0.5.20",
     "astro": "^5.7.10",
     "astro-icon": "^1.1.5",
+    "astro-mermaid": "^2.1.0",
     "lightningcss-win32-x64-msvc": "^1.32.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
