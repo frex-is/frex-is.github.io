@@ -1,0 +1,39 @@
+---
+import { codeToHtml } from 'shiki'
+import { Icon } from 'astro-icon/components'
+
+export interface Props {
+  code: string
+  lang?: string
+  title?: string
+}
+
+const { code, lang = 'text', title } = Astro.props
+
+const html = await codeToHtml(code.trim(), {
+  lang,
+  theme: 'github-dark',
+})
+---
+
+<div class="group rounded-block border border-border bg-surface-card overflow-hidden my-6">
+  <div class="flex items-center justify-between px-4 py-[10px] border-b border-border bg-surface/80">
+    <span class="text-text-subtle text-[13px] font-mono">{title || lang}</span>
+    <button class="copy-btn opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 text-text-subtle hover:text-text-secondary text-[13px]" data-code={code}>
+      <Icon name="lucide:copy" class="size-[14px]" />
+      Copy
+    </button>
+  </div>
+  <div class="overflow-x-auto [&_pre]:!bg-transparent [&_pre]:!p-4 [&_pre]:text-[13px] [&_pre]:leading-[1.7]" set:html={html} />
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(btn.dataset.code)
+      const original = btn.innerHTML
+      btn.innerHTML = 'Copied!'
+      setTimeout(() => btn.innerHTML = original, 2000)
+    })
+  })
+</script>

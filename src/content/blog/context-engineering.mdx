@@ -55,6 +55,7 @@ import HighLight from '@components/base/Highlight.astro'
 import Note from '@components/base/Note.astro'
 import { Icon } from 'astro-icon/components'
 import ContextGrid from '@components/ContextGrid.astro'
+import CodeBlock from '@components/base/CodeBlock.astro'
 
 
 <SectionHeader sectionId="intro" label="intro" />
@@ -290,6 +291,203 @@ Agrandir la fenêtre de contexte n'améliore pas automatiquement un agent. La qu
 <SectionHeader sectionId="archi" label="04" />
 
 <SectionTitle>L'Architecture : <HighLight accent="purple">un levier de performance</HighLight></SectionTitle>
+
+<Text>L'architecture logicielle a un impact important sur les performances des agents IA.</Text>
+
+<Text>Plus une architecture est <HighLight accent="green" bold>claire, modulaire et prévisible</HighLight>, plus il devient facile pour un agent de :</Text>
+
+<ul class="space-y-2 my-4 ml-2">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Comprendre le système dans lequel il évolue
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Trouver les informations dont il a besoin pour accomplir une tâche
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Retrouver les informations pertinentes
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Accomplir des modifications sans charger une quantité d'informations inutile dans le contexte
+  </li>
+</ul>
+
+<Text>À l'inverse, une architecture mal organisée, non modulaire ou trop complexe va rendre la tâche de l'agent plus difficile, et donc impacter négativement ses performances.</Text>
+
+<Text>Ce point est particulièrement visible avec les architectures logicielles utilisant fortement :</Text>
+
+<ul class="space-y-2 my-4 ml-2">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Les interfaces
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    L'inversion de dépendance
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Les responsabilités explicites
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Les frontières métier claires
+  </li>
+</ul>
+
+<Text>Pour citer quelques exemples d'architecture qui possèdent ces caractéristiques :</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+  <li class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:hexagon" class="shrink-0 size-[18px] text-accent-cyan" />
+    <span class="text-text-secondary text-[15px] font-semibold">Architecture hexagonale</span>
+  </li>
+  <li class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:layers" class="shrink-0 size-[18px] text-accent-purple" />
+    <span class="text-text-secondary text-[15px] font-semibold">Clean architecture</span>
+  </li>
+  <li class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:columns" class="shrink-0 size-[18px] text-accent-green" />
+    <span class="text-text-secondary text-[15px] font-semibold">Architecture orientée domaine (DDD)</span>
+  </li>
+  <li class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:boxes" class="shrink-0 size-[18px] text-accent-yellow" />
+    <span class="text-text-secondary text-[15px] font-semibold">Architecture orientée microservices</span>
+  </li>
+</ul>
+
+<Text>etc...</Text>
+
+<SectionTitle>Exemple concret</SectionTitle>
+
+<Text>Imaginons une application e-commerce dans laquelle nous souhaitons exposer un nouveau use case permettant à un utilisateur de consulter l'historique de ses commandes.</Text>
+
+<Text>Dans certaines architectures où les responsabilités techniques et métier sont fortement mélangées, l'agent devra souvent charger une grande partie de l'implémentation pour comprendre comment récupérer les commandes :</Text>
+
+<CodeBlock code={`public class OrderRepository {
+
+    private final EntityManager entityManager;
+    private final RedisTemplate redisTemplate;
+    private final KafkaProducer kafkaProducer;
+    private final MetricsRegistry metricsRegistry;
+    private final RetryExecutor retryExecutor;
+    private final AuditService auditService;
+
+    public List<Order> findOrdersByUserId(String userId) {
+
+        metricsRegistry.increment("orders.search");
+
+        String cacheKey = "orders:user:" + userId;
+
+        List<Order> cachedOrders = redisTemplate.get(cacheKey);
+
+        if (cachedOrders != null) {
+            return cachedOrders;
+        }
+
+        return retryExecutor.execute(() -> {
+
+            List<OrderEntity> entities = entityManager
+                .createQuery("""
+                    SELECT o
+                    FROM orders o
+                    LEFT JOIN order_items oi ON oi.order_id = o.id
+                    LEFT JOIN payments p ON p.order_id = o.id
+                    WHERE o.user_id = :userId
+                    ORDER BY o.created_at DESC
+                """)
+                .setParameter("userId", userId)
+                .getResultList();
+
+            List<Order> orders = entities.stream()
+                .map(this::mapEntity)
+                .toList();
+
+            kafkaProducer.publish(
+                "orders.history.consulted",
+                new OrderHistoryConsultedEvent(userId)
+            );
+
+            auditService.track(
+                "ORDER_HISTORY_CONSULTED",
+                Map.of("userId", userId)
+            );
+
+            redisTemplate.set(cacheKey, orders);
+
+            return orders;
+        });
+    }
+}`} lang="java" title="OrderRepository.java" />
+
+<Text>Dans cet exemple, l'agent doit charger énormément d'informations qui ne sont pas forcément utiles pour comprendre le comportement métier :</Text>
+
+<ul class="space-y-2 my-4 ml-2">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Cache Redis
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Métriques
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Retry
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Kafka
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Audit
+  </li>
+</ul>
+
+<Text>À l'inverse, avec une architecture basée sur des interfaces, l'agent peut souvent raisonner uniquement à partir du contrat d'interface, sans avoir à charger l'implémentation complète. L'interface va donc agir comme une <HighLight accent="green" bold>représentation compressée du système</HighLight> :</Text>
+
+<CodeBlock code={`public interface OrderRepository {
+    List<Order> findOrdersByUserId(String userId);
+}`} lang="java" title="OrderRepository.java" />
+
+<Text>Dans cet exemple, l'agent peut comprendre le comportement métier simplement à partir de la signature de l'interface, sans avoir à charger les détails de l'implémentation.</Text>
+
+<Text>Cela va donc permettre :</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:minimize-2" class="mt-1 shrink-0 size-[18px] text-accent-cyan" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Réduire fortement la taille du contexte</span>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:git-branch" class="mt-1 shrink-0 size-[18px] text-accent-green" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Diminuer le bruit décisionnel</span>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:eye" class="mt-1 shrink-0 size-[18px] text-accent-purple" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Améliorer la lisibilité du système pour l'agent</span>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:coins" class="mt-1 shrink-0 size-[18px] text-accent-yellow" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Limiter la consommation de token</span>
+    </div>
+  </li>
+</ul>
+
+<Note title="À retenir" variant="info">
+  Une architecture bien conçue — avec des interfaces, des responsabilités explicites et des frontières claires — agit comme un <HighLight accent="green" bold>compresseur de contexte naturel</HighLight> pour l'agent.
+</Note>
 
 <SectionHeader sectionId="compaction" label="05" />
 
