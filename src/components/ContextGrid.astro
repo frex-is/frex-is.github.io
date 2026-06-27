@@ -1,0 +1,99 @@
+---
+import { Icon } from 'astro-icon/components'
+
+const items = [
+  {
+    type: 'System prompt',
+    description: "Instructions principales de l'agent : personnalité, règles, formats de réponse.",
+    locations: ['AGENTS.md', 'system_prompt.md'],
+    color: 'purple' as const,
+    icon: 'lucide:file-text',
+  },
+  {
+    type: 'System tools',
+    description: 'Outils système pour lire, écrire, exécuter des commandes et interagir avec le système.',
+    locations: ['.opencode/tools/', '~/.opencode/tools/'],
+    color: 'cyan' as const,
+    icon: 'lucide:wrench',
+  },
+  {
+    type: 'MCP tools',
+    description: 'Serveurs MCP (Model Context Protocol) pour intégrer des services externes.',
+    locations: ['.opencode/mcp/', '~/.opencode/mcp/'],
+    color: 'green' as const,
+    icon: 'lucide:plug',
+  },
+  {
+    type: 'Memory files',
+    description: "Fichiers mémoire conservant l'historique des conversations et les résultats obtenus.",
+    locations: ['.opencode/memory/', 'NOTES.md', 'CONTEXT.md'],
+    color: 'yellow' as const,
+    icon: 'lucide:database',
+  },
+  {
+    type: 'Skills',
+    description: 'Compétences définissant les tâches spécifiques que l\'agent peut accomplir.',
+    locations: ['.opencode/skills/', 'SKILLS.md'],
+    color: 'pink' as const,
+    icon: 'lucide:zap',
+  },
+  {
+    type: 'Messages',
+    description: "Échanges entre l'agent et l'utilisateur, et communications avec les outils.",
+    locations: ['context-engineering.mdx'],
+    color: 'red' as const,
+    icon: 'lucide:message-circle',
+  },
+]
+
+const colorStyles: Record<string, { border: string; bg: string; text: string }> = {
+  purple: { border: 'border-accent-purple/30', bg: 'bg-accent-purple/10', text: 'text-accent-purple' },
+  cyan: { border: 'border-accent-cyan/30', bg: 'bg-accent-cyan/10', text: 'text-accent-cyan' },
+  green: { border: 'border-accent-green/30', bg: 'bg-accent-green/10', text: 'text-accent-green' },
+  yellow: { border: 'border-accent-yellow/30', bg: 'bg-accent-yellow/10', text: 'text-accent-yellow' },
+  pink: { border: 'border-accent-pink/30', bg: 'bg-accent-pink/10', text: 'text-accent-pink' },
+  red: { border: 'border-accent-red/30', bg: 'bg-accent-red/10', text: 'text-accent-red' },
+}
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {items.map((item) => {
+    const c = colorStyles[item.color]
+    return (
+      <div
+        class="bg-surface-card rounded-card border border-border p-5 hover:border-border-hover hover:bg-surface-hover transition-all duration-200 group relative overflow-hidden"
+      >
+        <div class={`absolute top-0 left-0 right-0 h-[3px] ${c.bg} opacity-60`} />
+
+        <div class="flex items-start gap-3.5">
+          <div
+            class={`size-10 rounded-lg ${c.bg} ${c.text} flex items-center justify-center shrink-0`}
+          >
+            <Icon name={item.icon} class="size-5" />
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <h3
+              class:list={[
+                'text-sm font-semibold text-text-primary group-hover:text-accent-cyan transition-colors',
+              ]}
+            >
+              {item.type}
+            </h3>
+            <p class="text-xs text-text-muted mt-1 leading-[1.6]">
+              {item.description}
+            </p>
+
+            <div class="flex flex-wrap gap-1.5 mt-3">
+              {item.locations.map((loc) => (
+                <span class="inline-block text-[10px] font-mono font-medium px-2 py-0.5 rounded border border-border text-text-subtle/80 bg-surface-elevated/40">
+                  {loc}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  })}
+</div>

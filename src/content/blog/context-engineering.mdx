@@ -12,9 +12,6 @@ tableOfContent:
 
 - id: "context"
   label: "1. Le Contexte"
-  children:
-    - id: "Anatomie"
-      label: "Anatomie"
 
 - id: "limit"
   label: "2. Limit & dégradation"
@@ -56,6 +53,8 @@ import TagList from '@components/base/TagList.astro'
 import SectionTitle from '@components/blog/SectionTitle.astro'
 import HighLight from '@components/base/Highlight.astro'
 import Note from '@components/base/Note.astro'
+import { Icon } from 'astro-icon/components'
+import ContextGrid from '@components/ContextGrid.astro'
 
 
 <SectionHeader sectionId="intro" label="intro" />
@@ -78,5 +77,106 @@ import Note from '@components/base/Note.astro'
 
 <SectionTitle>Le contexte : <HighLight accent='green'>mémoire volatile de l'agent</HighLight></SectionTitle>
 
+<Text>Le contexte peut être vu comme une mémoire volatile (comme la RAM d'un ordinateur), qui est utilisée pour stocker l'identité de l'agent, les outils à sa disposition, les conversations passées, etc. C'est dans ce contexte que l'agent va puiser les informations nécessaires pour répondre aux questions ou accomplir les tâches qui lui sont demandées.</Text>
+
+<Text>Le contexte d'un agent se compose de plusieurs couches qui convergent avant chaque inférence. Les différentes sources (directives, outils, compétences, historique, ...) sont assemblées dans une fenêtre de contexte unique.</Text>
+
+<ContextGrid />
+
+<SectionHeader sectionId="limit" label="02" />
+
+<SectionTitle>Limites et <HighLight accent="red">dégradation du context</HighLight></SectionTitle>
+
+<Text>Il est important de noter que le contexte est limité en taille et que plus celui-ci se remplit, plus l'agent produit des réponses de moins bonne qualité et donc fait apparaitre plusieurs problèmes :</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+    <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+      <Icon name="lucide:crosshair" class="mt-1 shrink-0 size-[18px] text-accent-red" />
+      <div class="flex flex-col gap-0.5">
+        <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Perte de précision</span>
+        <p class="text-text-subtle text-[13px] leading-[1.5]">Le modèle répond de façon approximative ou floue sur les détails techniques</p>
+      </div>
+    </li>
+    <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+      <Icon name="lucide:message-square" class="mt-1 shrink-0 size-[18px] text-accent-purple" />
+      <div class="flex flex-col gap-0.5">
+        <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Augmentation des hallucinations</span>
+        <p class="text-text-subtle text-[13px] leading-[1.5]">L'agent invente des informations ou des faits inexistants avec assurance</p>
+      </div>
+    </li>
+    <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+      <Icon name="lucide:clipboard" class="mt-1 shrink-0 size-[18px] text-accent-yellow" />
+      <div class="flex flex-col gap-0.5">
+        <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Oublie des instructions système</span>
+        <p class="text-text-subtle text-[13px] leading-[1.5]">Les directives données en début de session sont progressivement ignorées</p>
+      </div>
+    </li>
+    <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+      <Icon name="lucide:trending-down" class="mt-1 shrink-0 size-[18px] text-accent-pink" />
+      <div class="flex flex-col gap-0.5">
+        <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Raisonnement de moins bonne qualité</span>
+        <p class="text-text-subtle text-[13px] leading-[1.5]">La chaîne de pensée devient moins cohérente et perd en rigueur logique</p>
+      </div>
+    </li>
+    <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+      <Icon name="lucide:coins" class="mt-1 shrink-0 size-[18px] text-accent-green" />
+      <div class="flex flex-col gap-0.5">
+        <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Augmentation du coût en token</span>
+        <p class="text-text-subtle text-[13px] leading-[1.5]">Chaque requête consomme davantage de tokens, ce qui augmente la facture</p>
+      </div>
+    </li>
+    <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+      <Icon name="lucide:clock" class="mt-1 shrink-0 size-[18px] text-accent-cyan" />
+      <div class="flex flex-col gap-0.5">
+        <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Augmentation du temps de réponse</span>
+        <p class="text-text-subtle text-[13px] leading-[1.5]">Le délai entre la requête et la réponse s'allonge significativement</p>
+      </div>
+    </li>
+</ul>
+
+<div class="my-6">
+  <Text>Ces problèmes ne surviennent pas uniquement lorsque la fenêtre de contexte est complètement saturée. En pratique, les performances d'un modèle commencent souvent à se dégrader bien avant d'atteindre la limite théorique annoncée.</Text>
+
+  <Text>Certains modèles disposent de fenêtres de contexte de plus de 500 000 tokens, ce qui peut sembler considérable. Pourtant, dans la pratique, de nombreux modèles voient leurs performances diminuer bien avant d'atteindre cette limite, parfois dès 50 à 60 % de la fenêtre de contexte disponible.</Text>
+
+  <Text>Cette dégradation progressive est notamment liée à l'accumulation d'informations peu pertinentes ou obsolètes dans le contexte, un phénomène souvent appelé context rot. Ainsi, augmenter la taille de la fenêtre de contexte ne résout pas le problème : un contexte plus grand n'est pas nécessairement un meilleur contexte.</Text>
+
+  <Text>En pratique, supprimer régulièrement les informations devenues inutiles et ne conserver que le contexte réellement pertinent est souvent l'un des leviers les plus efficaces pour préserver les performances d'un agent.</Text>
+</div>
+
+<Note title="A retenir" variant="info">
+Agrandir la fenêtre de contexte n'améliore pas automatiquement un agent. La qualité du contexte est souvent plus importante que sa taille. Supprimer les informations devenues inutiles ([**context rot**](https://www.trychroma.com/research/context-rot)) est l'une des optimisations les plus efficaces pour maintenir de bonnes performances.
+</Note>
+
+<SectionHeader sectionId="bruit" label="03" />
+
+<SectionTitle>Capacités globales & <HighLight accent="yellow">bruit décisionnel</HighLight></SectionTitle>
+
+
+<SectionHeader sectionId="archi" label="04" />
+
+<SectionTitle>L'Architecture : <HighLight accent="purple">un levier de performance</HighLight></SectionTitle>
+
+<SectionHeader sectionId="compaction" label="05" />
+
+<SectionTitle>La compaction : <HighLight accent="green">réduire la taille du contexte</HighLight></SectionTitle>
+
+<SectionHeader sectionId="rag" label="06" />
+
+<SectionTitle>RAG : <HighLight accent="cyan">Raisonnement & Données</HighLight></SectionTitle>
+
+<SectionHeader sectionId="rationalisation" label="06" />
+
+<SectionTitle>Rationalisation : <HighLight accent="yellow">l'efficience par les tools</HighLight></SectionTitle>
+
+<SectionHeader sectionId="agent" label="07" />
+
+<SectionTitle>Architecture <HighLight accent="cyan">Supervisor / Sub-agent</HighLight></SectionTitle>
+
+<SectionHeader sectionId="synthese" label="synthèse" />
+
+<SectionTitle>Synthèse : le contexte, <HighLight accent="green">ressource critique</HighLight></SectionTitle>
+
+<SectionHeader sectionId="references" label="références" />
 
 
