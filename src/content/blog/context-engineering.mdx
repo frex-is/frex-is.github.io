@@ -57,6 +57,7 @@ import { Icon } from 'astro-icon/components'
 import ContextGrid from '@components/ContextGrid.astro'
 import CodeBlock from '@components/base/CodeBlock.astro'
 import Title from '@components/base/Title.astro'
+import Link from '@components/base/Link.astro'
 
 
 <SectionHeader sectionId="intro" label="intro" />
@@ -599,7 +600,7 @@ Agrandir la fenêtre de contexte n'améliore pas automatiquement un agent. La qu
   <Title size={3}>Caveman</Title>
 
   <div class="pl-8">
-  <Text>Caveman est un outil qui va effectuer la compression directement sur l'output. Pour ce faire, il va demander aux modèles d'appliquer quelques contraintes visibles <a href="https://github.com/anthropics/claude-code/blob/main/Caveman.md" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">ici</a>.</Text>
+  <Text>Caveman est un outil qui va effectuer la compression directement sur l'output. Pour ce faire, il va demander aux modèles d'appliquer quelques contraintes visibles <Link href="https://github.com/anthropics/claude-code/blob/main/Caveman.md">ici</Link>.</Text>
 
   <Text>Exemple de compression avec Caveman :</Text>
 
@@ -702,7 +703,7 @@ sequenceDiagram
     Agent-->>User: "Voici comment fonctionne l'auth : [Explication précise]"
 ```
 
-<Text>La performance et l'efficacité d'un RAG dépendent entièrement de la complexité de son architecture. Comme le montre <a href="https://blog.starmorph.com/blog/rag-techniques-compared-best-practices-guide" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">cet article</a>, obtenir des réponses de haute qualité implique un compromis entre la latence et le coût financier. De plus, mettre en place un RAG performant demande un effort d'ingénierie (chunking intelligent, gestion des embeddings, ranking, etc.).</Text>
+<Text>La performance et l'efficacité d'un RAG dépendent entièrement de la complexité de son architecture. Comme le montre <Link href="https://blog.starmorph.com/blog/rag-techniques-compared-best-practices-guide">cet article</Link>, obtenir des réponses de haute qualité implique un compromis entre la latence et le coût financier. De plus, mettre en place un RAG performant demande un effort d'ingénierie (chunking intelligent, gestion des embeddings, ranking, etc.).</Text>
 
 <Text>Ce n'est pas une solution miracle — elle présente des limites :</Text>
 
@@ -728,15 +729,15 @@ sequenceDiagram
 <ul class="space-y-2 my-4 ml-2">
   <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
     <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
-    <a href="https://developers.openai.com/cookbook/examples/vector_databases/elasticsearch/elasticsearch-retrieval-augmented-generation#install-packages-and-import-modules" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">OpenAI Cookbook</a>
+    <Link href="https://developers.openai.com/cookbook/examples/vector_databases/elasticsearch/elasticsearch-retrieval-augmented-generation#install-packages-and-import-modules">OpenAI Cookbook</Link>
   </li>
   <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
     <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
-    <a href="https://platform.claude.com/cookbook/capabilities-retrieval-augmented-generation-guide" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">Claude Cookbook</a>
+    <Link href="https://platform.claude.com/cookbook/capabilities-retrieval-augmented-generation-guide">Claude Cookbook</Link>
   </li>
   <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
     <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-green"></span>
-    <a href="https://deepwiki.com/athina-ai/rag-cookbooks" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">Athina AI RAG Cookbooks</a>
+    <Link href="https://deepwiki.com/athina-ai/rag-cookbooks">Athina AI RAG Cookbooks</Link>
   </li>
 </ul>
 
@@ -754,7 +755,7 @@ sequenceDiagram
 
 <Title size={3}>La réduction du nombre de tools</Title>
 
-<Text>C'est la manière la plus idiomatique pour redonner de la précision à un agent. Certaines études suggèrent qu'au-delà d'un certain nombre d'outils (~7 selon <a href="https://arxiv.org/html/2605.24660v1" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">How Many Tools Should an LLM Agent See? A Chance-Corrected Answer</a>), les performances de sélection se dégradent fortement.</Text>
+<Text>C'est la manière la plus idiomatique pour redonner de la précision à un agent. Certaines études suggèrent qu'au-delà d'un certain nombre d'outils (~7 selon <Link href="https://arxiv.org/html/2605.24660v1">How Many Tools Should an LLM Agent See? A Chance-Corrected Answer</Link>), les performances de sélection se dégradent fortement.</Text>
 
 <Text>Pour ce faire on a 2 stratégies à ma connaissance :</Text>
 
@@ -921,7 +922,7 @@ graph LR
 
 <Text>Si nos agents doivent échanger des rapports ou faire des allers-retours, le nombre de requêtes API peut exploser.</Text>
 
-<Text>Il sera tout de même important de prendre en compte qu'il existe plusieurs types d'architecture multi-agent comme le montre <a href="https://www.langchain.com/blog/choosing-the-right-multi-agent-architecture" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">l'article suivant</a> et que chaque architecture possède ses best practices et ses trade offs. C'est donc un pattern à adapter à chaque projet.</Text>
+<Text>Il sera tout de même important de prendre en compte qu'il existe plusieurs types d'architecture multi-agent comme le montre <Link href="https://www.langchain.com/blog/choosing-the-right-multi-agent-architecture">l'article suivant</Link> et que chaque architecture possède ses best practices et ses trade offs. C'est donc un pattern à adapter à chaque projet.</Text>
 
 <SectionHeader sectionId="synthese" label="synthèse" />
 
