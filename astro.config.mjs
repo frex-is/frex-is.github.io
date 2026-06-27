@@ -11,7 +11,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
   site: "https://frex-is.github.io",
-  base: "/astro-website/",
+  base: "/",
   markdown: {
     syntaxHighlight: {
       type: 'shiki',
