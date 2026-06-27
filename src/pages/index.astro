@@ -1,7 +1,160 @@
 ---
-import Layout from "@layouts/blog/ArticleLayout.astro"
+import BaseLayout from "@layouts/BaseLayout.astro"
+import Header from "@components/navigation/Header.astro"
+import { Icon } from 'astro-icon/components'
+import { getCollection, type CollectionEntry } from "astro:content"
+
+const posts = await getCollection("blog")
+const latestPosts = posts
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  .slice(0, 3)
 ---
 
-<Layout title="Accueil">
-    
-</Layout>
+<BaseLayout title="Accueil">
+  <div class="fixed inset-0 pointer-events-none z-0 opacity-[0.04]"
+    style="background-image:
+      linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+      background-size: 64px 64px;"
+  />
+
+  <Header />
+
+  <div class="relative z-10 min-h-[calc(100vh-4rem)] flex items-center py-20">
+    <div class="max-w-[1200px] mx-auto px-6 w-full">
+      <div class="grid grid-cols-12 gap-12">
+        <aside class="col-span-3">
+          <div class="bg-surface-card rounded-card border border-border p-6 space-y-6">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-24 h-24 rounded-full bg-gradient-to-br from-accent-cyan to-accent-purple p-[2px] mb-4">
+                <div class="w-full h-full rounded-full bg-surface flex items-center justify-center text-2xl font-extrabold tracking-tight text-accent-cyan">
+                  AJ
+                </div>
+              </div>
+              <h2 class="text-lg font-bold text-text-primary">Jérémy</h2>
+              <p class="text-sm text-text-muted">Développeur R&D Big Data</p>
+            </div>
+
+            <div class="border-t border-border pt-5 space-y-1">
+              <a href="https://github.com/frex-is" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-accent-cyan hover:bg-surface-hover transition-all no-underline">
+                <Icon name="lucide:github" class="size-[18px]" />
+                GitHub
+              </a>
+              <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-accent-cyan hover:bg-surface-hover transition-all no-underline">
+                <Icon name="lucide:linkedin" class="size-[18px]" />
+                LinkedIn
+              </a>
+              <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-accent-cyan hover:bg-surface-hover transition-all no-underline">
+                <Icon name="lucide:twitter" class="size-[18px]" />
+                Twitter
+              </a>
+            </div>
+          </div>
+        </aside>
+
+        <div class="col-span-9">
+          <div class="relative">
+            <div class="absolute -top-12 -left-6 text-[clamp(6rem,10vw,10rem)] font-black text-text-primary select-none pointer-events-none leading-none opacity-[0.03] tracking-tighter">
+              DÉVELOPPEUR
+            </div>
+
+            <div class="relative space-y-10">
+              <div>
+                <h1 class="text-[clamp(1.8rem,3.5vw,2.8rem)] font-extrabold tracking-tight text-text-primary leading-tight">
+                  Salut, moi c'est <span class="text-accent-cyan">Jérémy</span>
+                </h1>
+                <p class="text-sm font-semibold text-accent-cyan tracking-wider uppercase mt-2">
+                  Développeur R&D Big Data
+                </p>
+                <p class="text-base text-text-muted italic mt-4 border-l-2 border-accent-cyan/30 pl-4">
+                  "J'aime comprendre comment les technologies fonctionnent avant de les utiliser."
+                </p>
+                <p class="text-base text-text-secondary leading-relaxed mt-6">
+                  Je suis développeur en R&D Big Data, passionné par l'ingénierie logicielle et les systèmes distribués.
+                  J'aime autant écrire du code que comprendre ce qui se passe sous le capot d'une technologie.
+                </p>
+                <p class="text-base text-text-secondary leading-relaxed mt-4">
+                  Entre Python, Kotlin et les projets personnels que je développe pour apprendre de nouvelles choses,
+                  j'ai créé ce blog pour partager mes expérimentations, mes retours d'expérience et quelques astuces
+                  qui pourront, je l'espère, être utiles à d'autres développeurs.
+                </p>
+              </div>
+
+              <div class="flex flex-wrap gap-4">
+                <a
+                  href="/blog"
+                  class="inline-flex items-center gap-2 px-6 py-3 bg-accent-cyan/10 border border-accent-cyan/30 rounded-card text-sm font-semibold text-accent-cyan no-underline hover:bg-accent-cyan/20 hover:border-accent-cyan/50 hover:scale-[1.02] transition-all duration-200 group shadow-none hover:shadow-[0_0_20px_-5px_rgba(34,211,238,0.3)]"
+                >
+                  Voir les articles
+                  <svg class="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </a>
+                <a
+                  href="#"
+                  class="inline-flex items-center gap-2 px-6 py-3 border border-border rounded-card text-sm font-semibold text-text-secondary no-underline hover:border-text-muted hover:text-text-primary transition-all duration-200"
+                >
+                  <Icon name="lucide:folder-git-2" class="size-[18px]" />
+                  Mes projets
+                </a>
+              </div>
+
+              <div class="grid grid-cols-4 gap-4">
+                <div class="bg-surface-card rounded-card border border-border p-4 text-center">
+                  <p class="text-xl font-bold text-accent-cyan">+3</p>
+                  <p class="text-xs text-text-muted mt-1">ans d'expérience</p>
+                </div>
+                <div class="bg-surface-card rounded-card border border-border p-4 text-center">
+                  <p class="text-xl font-bold text-accent-cyan">{posts.length}</p>
+                  <p class="text-xs text-text-muted mt-1">articles publiés</p>
+                </div>
+                <div class="bg-surface-card rounded-card border border-border p-4 text-center">
+                  <p class="text-xl font-bold text-accent-cyan">8</p>
+                  <p class="text-xs text-text-muted mt-1">projets perso</p>
+                </div>
+                <div class="bg-surface-card rounded-card border border-border p-4 text-center">
+                  <p class="text-xl font-bold text-accent-cyan">Open Source</p>
+                  <p class="text-xs text-text-muted mt-1">passionné</p>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                {["Python", "Kotlin", "Spark", "Iceberg", "React", "Docker", "Linux"].map(tech => (
+                  <span class="px-3 py-1.5 text-xs font-medium text-accent-cyan bg-accent-cyan/8 border border-accent-cyan/15 rounded-pill">
+                    {tech}
+                  </span>
+                ))}
+              </div>
+
+              {latestPosts.length > 0 && (
+                <section>
+                  <h2 class="text-lg font-bold text-text-primary mb-4">Derniers articles</h2>
+                  <div class="grid grid-cols-2 gap-4">
+                    {latestPosts.map((post: CollectionEntry<"blog">) => (
+                      <a
+                        href={`/blog/${post.slug}`}
+                        class="block bg-surface-card rounded-card border border-border p-5 no-underline hover:border-border-hover hover:bg-surface-hover transition-all duration-200 group"
+                      >
+                        <div class="flex items-center gap-2 text-xs text-text-muted mb-2">
+                          <time datetime={post.data.date}>{post.data.date}</time>
+                          <span>·</span>
+                          <span>{post.data.readingTime} min</span>
+                        </div>
+                        <h3 class="text-sm font-semibold text-text-primary group-hover:text-accent-cyan transition-colors">
+                          {post.data.title}
+                        </h3>
+                        <p class="text-xs text-text-muted mt-1.5 line-clamp-2">
+                          {post.data.description}
+                        </p>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
