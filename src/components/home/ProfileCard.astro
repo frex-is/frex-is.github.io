@@ -1,0 +1,44 @@
+---
+import { Icon } from 'astro-icon/components'
+
+export interface SocialLink {
+  label: string
+  href: string
+  icon: string
+}
+
+export interface Props {
+  initials: string
+  name: string
+  role: string
+  links: SocialLink[]
+}
+
+const { initials, name, role, links } = Astro.props
+---
+
+<aside class="col-span-3">
+  <div class="bg-surface-card rounded-card border border-border p-6 space-y-6">
+    <div class="flex flex-col items-center text-center">
+      <div class="w-24 h-24 rounded-full bg-gradient-to-br from-accent-cyan to-accent-purple p-[2px] mb-4">
+        <div class="w-full h-full rounded-full bg-surface flex items-center justify-center text-2xl font-extrabold tracking-tight text-accent-cyan">
+          {initials}
+        </div>
+      </div>
+      <h2 class="text-lg font-bold text-text-primary">{name}</h2>
+      <p class="text-sm text-text-muted">{role}</p>
+    </div>
+
+    <div class="border-t border-border pt-5 space-y-1">
+      {links.map((link: SocialLink) => (
+        <a
+          href={link.href}
+          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-accent-cyan hover:bg-surface-hover transition-all no-underline"
+        >
+          <Icon name={link.icon} class="size-[18px]" />
+          {link.label}
+        </a>
+      ))}
+    </div>
+  </div>
+</aside>

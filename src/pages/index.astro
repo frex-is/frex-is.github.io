@@ -2,16 +2,35 @@
 import BaseLayout from "@layouts/BaseLayout.astro"
 import Header from "@components/navigation/Header.astro"
 import { Icon } from 'astro-icon/components'
-import { getCollection, type CollectionEntry } from "astro:content"
+import { getCollection } from "astro:content"
+import ProfileCard from "@components/home/ProfileCard.astro"
+import StatsGrid from "@components/home/StatsGrid.astro"
+import TechBadges from "@components/home/TechBadges.astro"
+import LatestArticles from "@components/home/LatestArticles.astro"
 
 const posts = await getCollection("blog")
 const latestPosts = posts
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
   .slice(0, 3)
+
+const socialLinks = [
+  { label: "GitHub", href: "https://github.com/frex-is", icon: "lucide:github" },
+  { label: "LinkedIn", href: "#", icon: "lucide:linkedin" },
+  { label: "Twitter", href: "#", icon: "lucide:twitter" },
+]
+
+const technologies = ["Python", "Kotlin", "Spark", "Iceberg", "React", "Docker", "Linux"]
+
+const stats = [
+  { value: "+3", label: "ans d'expérience" },
+  { value: String(posts.length), label: "articles publiés" },
+  { value: "8", label: "projets perso" },
+  { value: "Open Source", label: "passionné" },
+]
 ---
 
 <BaseLayout title="Accueil">
-  <div class="fixed inset-0 pointer-events-none z-0 opacity-[0.04]"
+  <div class="fixed inset-0 pointer-events-none z-0 opacity-[0.02]"
     style="background-image:
       linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
@@ -23,34 +42,12 @@ const latestPosts = posts
   <div class="relative z-10 min-h-[calc(100vh-4rem)] flex items-center py-20">
     <div class="max-w-[1200px] mx-auto px-6 w-full">
       <div class="grid grid-cols-12 gap-12">
-        <aside class="col-span-3">
-          <div class="bg-surface-card rounded-card border border-border p-6 space-y-6">
-            <div class="flex flex-col items-center text-center">
-              <div class="w-24 h-24 rounded-full bg-gradient-to-br from-accent-cyan to-accent-purple p-[2px] mb-4">
-                <div class="w-full h-full rounded-full bg-surface flex items-center justify-center text-2xl font-extrabold tracking-tight text-accent-cyan">
-                  AJ
-                </div>
-              </div>
-              <h2 class="text-lg font-bold text-text-primary">Jérémy</h2>
-              <p class="text-sm text-text-muted">Développeur R&D Big Data</p>
-            </div>
-
-            <div class="border-t border-border pt-5 space-y-1">
-              <a href="https://github.com/frex-is" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-accent-cyan hover:bg-surface-hover transition-all no-underline">
-                <Icon name="lucide:github" class="size-[18px]" />
-                GitHub
-              </a>
-              <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-accent-cyan hover:bg-surface-hover transition-all no-underline">
-                <Icon name="lucide:linkedin" class="size-[18px]" />
-                LinkedIn
-              </a>
-              <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-accent-cyan hover:bg-surface-hover transition-all no-underline">
-                <Icon name="lucide:twitter" class="size-[18px]" />
-                Twitter
-              </a>
-            </div>
-          </div>
-        </aside>
+        <ProfileCard
+          initials="MJ"
+          name="Jérémy"
+          role="Développeur R&D Big Data"
+          links={socialLinks}
+        />
 
         <div class="col-span-9">
           <div class="relative">
@@ -67,7 +64,7 @@ const latestPosts = posts
                   Développeur R&D Big Data
                 </p>
                 <p class="text-base text-text-muted italic mt-4 border-l-2 border-accent-cyan/30 pl-4">
-                  "J'aime comprendre comment les technologies fonctionnent avant de les utiliser."
+                  "J'apprends en construisant, et je construis pour apprendre."
                 </p>
                 <p class="text-base text-text-secondary leading-relaxed mt-6">
                   Je suis développeur en R&D Big Data, passionné par l'ingénierie logicielle et les systèmes distribués.
@@ -99,57 +96,11 @@ const latestPosts = posts
                 </a>
               </div>
 
-              <div class="grid grid-cols-4 gap-4">
-                <div class="bg-surface-card rounded-card border border-border p-4 text-center">
-                  <p class="text-xl font-bold text-accent-cyan">+3</p>
-                  <p class="text-xs text-text-muted mt-1">ans d'expérience</p>
-                </div>
-                <div class="bg-surface-card rounded-card border border-border p-4 text-center">
-                  <p class="text-xl font-bold text-accent-cyan">{posts.length}</p>
-                  <p class="text-xs text-text-muted mt-1">articles publiés</p>
-                </div>
-                <div class="bg-surface-card rounded-card border border-border p-4 text-center">
-                  <p class="text-xl font-bold text-accent-cyan">8</p>
-                  <p class="text-xs text-text-muted mt-1">projets perso</p>
-                </div>
-                <div class="bg-surface-card rounded-card border border-border p-4 text-center">
-                  <p class="text-xl font-bold text-accent-cyan">Open Source</p>
-                  <p class="text-xs text-text-muted mt-1">passionné</p>
-                </div>
-              </div>
-
-              <div class="flex flex-wrap gap-2">
-                {["Python", "Kotlin", "Spark", "Iceberg", "React", "Docker", "Linux"].map(tech => (
-                  <span class="px-3 py-1.5 text-xs font-medium text-accent-cyan bg-accent-cyan/8 border border-accent-cyan/15 rounded-pill">
-                    {tech}
-                  </span>
-                ))}
-              </div>
+              <StatsGrid stats={stats} />
+              <TechBadges technologies={technologies} />
 
               {latestPosts.length > 0 && (
-                <section>
-                  <h2 class="text-lg font-bold text-text-primary mb-4">Derniers articles</h2>
-                  <div class="grid grid-cols-2 gap-4">
-                    {latestPosts.map((post: CollectionEntry<"blog">) => (
-                      <a
-                        href={`/blog/${post.slug}`}
-                        class="block bg-surface-card rounded-card border border-border p-5 no-underline hover:border-border-hover hover:bg-surface-hover transition-all duration-200 group"
-                      >
-                        <div class="flex items-center gap-2 text-xs text-text-muted mb-2">
-                          <time datetime={post.data.date}>{post.data.date}</time>
-                          <span>·</span>
-                          <span>{post.data.readingTime} min</span>
-                        </div>
-                        <h3 class="text-sm font-semibold text-text-primary group-hover:text-accent-cyan transition-colors">
-                          {post.data.title}
-                        </h3>
-                        <p class="text-xs text-text-muted mt-1.5 line-clamp-2">
-                          {post.data.description}
-                        </p>
-                      </a>
-                    ))}
-                  </div>
-                </section>
+                <LatestArticles posts={latestPosts} />
               )}
             </div>
           </div>

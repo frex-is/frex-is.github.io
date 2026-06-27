@@ -1,0 +1,33 @@
+---
+import type { CollectionEntry } from "astro:content"
+
+export interface Props {
+  posts: CollectionEntry<"blog">[]
+}
+
+const { posts } = Astro.props
+---
+
+<section>
+  <h2 class="text-lg font-bold text-text-primary mb-4">Derniers articles</h2>
+  <div class="grid grid-cols-2 gap-4">
+    {posts.map((post: CollectionEntry<"blog">) => (
+      <a
+        href={`/blog/${post.slug}`}
+        class="block bg-surface-card rounded-card border border-border p-5 no-underline hover:border-border-hover hover:bg-surface-hover transition-all duration-200 group"
+      >
+        <div class="flex items-center gap-2 text-xs text-text-muted mb-2">
+          <time datetime={post.data.date}>{post.data.date}</time>
+          <span>·</span>
+          <span>{post.data.readingTime} min</span>
+        </div>
+        <h3 class="text-sm font-semibold text-text-primary group-hover:text-accent-cyan transition-colors">
+          {post.data.title}
+        </h3>
+        <p class="text-xs text-text-muted mt-1.5 line-clamp-2">
+          {post.data.description}
+        </p>
+      </a>
+    ))}
+  </div>
+</section>
