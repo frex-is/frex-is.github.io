@@ -1,0 +1,61 @@
+---
+export interface Props {
+  title?: string
+  headers: { label: string; align?: 'left' | 'center' | 'right' }[]
+  rows: (string | number)[][]
+  highlightRows?: number[]
+  highlightColor?: 'cyan' | 'green' | 'red' | 'yellow' | 'purple'
+}
+
+const { title, headers, rows, highlightRows, highlightColor = 'cyan' } = Astro.props
+
+const alignClass: Record<string, string> = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+}
+---
+
+{
+  title && <h3 class="text-text-primary text-[17px] font-semibold mb-3">{title}</h3>
+}
+
+<div class="overflow-x-auto my-6">
+  <table class="w-full text-[15px] border-collapse">
+    <thead>
+      <tr class="border-b border-border">
+        {headers.map((h) => (
+          <th
+            class:list={[
+              'py-3 px-4 text-text-secondary font-semibold',
+              alignClass[h.align ?? 'left'],
+            ]}
+          >
+            {h.label}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row, i) => {
+        const isHighlight = highlightRows?.includes(i)
+        return (
+        <tr class:list={[
+          'border-b border-border', 
+          isHighlight && `text-accent-${highlightColor}`
+        ]}>
+          {row.map((cell, i) => (
+            <td
+              class:list={[
+                'py-3 px-4',
+                alignClass[headers[i]?.align ?? 'left'],
+              ]}
+            >
+              {cell}
+            </td>
+          ))}
+        </tr>
+      )})}
+    </tbody>
+  </table>
+</div>

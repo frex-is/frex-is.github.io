@@ -1,0 +1,206 @@
+---
+title: "Évaluer, tester et faire évoluer un agent IA"
+description: "Pourquoi et comment évaluer un agent IA : benchmarks métier, détection de régressions, boucle de validation humaine et pilotage par la donnée."
+date: "2026-07-01"
+readingTime: "15"
+tags:
+- Testing
+- AI
+- Benchmark
+tableOfContent:
+- id: "intro"
+  label: "Introduction"
+
+- id: "pourquoi"
+  label: "1. Pourquoi évaluer et benchmarker"
+
+- id: "benchmarks"
+  label: "2. Benchmarks publics"
+---
+import SectionHeader from '@components/blog/SectionHeader.astro'
+import Text from '@components/base/text.astro'
+import TagList from '@components/base/TagList.astro'
+import Note from '@components/base/Note.astro'
+import SectionTitle from '@components/blog/SectionTitle.astro'
+import HighLight from '@components/base/Highlight.astro'
+import Link from '@components/base/Link.astro'
+import Title from '@components/base/Title.astro'
+import Table from '@components/base/Table.astro'
+
+<SectionHeader sectionId="intro" label="intro" />
+
+<Text>Les agents IA sont de plus en plus présents dans les applications : assistants de développement, moteurs de recherche augmentés, outils d'automatisation ou encore assistants métier. Pourtant, une question revient systématiquement lorsqu'un agent évolue : comment savoir si les modifications apportées améliorent réellement son comportement ?</Text>
+
+<Text>Contrairement aux logiciels traditionnels, il n'est généralement pas possible de vérifier le bon fonctionnement d'un agent à l'aide d'un simple ensemble de tests déterministes. Changer de modèle, modifier un prompt, ajouter un outil ou enrichir une base de connaissances peut améliorer certains cas d'usage tout en en dégradant d'autres, parfois de manière difficilement perceptible.</Text>
+
+<Text>Dans ce contexte, l'évaluation devient une composante essentielle du cycle de développement. Elle permet de comparer différentes versions d'un agent, de détecter les régressions avant leur mise en production, de mesurer l'impact des évolutions et, plus largement, de prendre des décisions basées sur des données plutôt que sur des impressions.</Text>
+
+<Text>Dans cet article, nous verrons pourquoi les benchmarks publics ne suffisent pas à évaluer un agent dans un contexte métier, comment construire un benchmark adapté à ses propres cas d'usage et comment automatiser cette démarche à l'aide d'un exemple concret. Nous aborderons également l'intégration d'une boucle de validation humaine, l'exploitation des retours de production ainsi que la mise en place de garde-fous permettant de suivre le coût, la latence et la qualité des agents au fil du temps.</Text>
+
+<TagList tags={[
+  { label: 'Agent IA' },
+  { label: 'Évaluation', variant: 'green' },
+  { label: 'Benchmark', variant: 'purple' },
+  { label: 'Testing', variant: 'red' },
+  { label: 'Qualité' },
+]} />
+
+<Note title="Note">
+  Les concepts et méthodes présentés dans cet article s'appliquent à la plupart des frameworks et modèles d'agents IA. Les exemples concrets s'appuieront sur des outils open-source, mais la démarche reste généralisable à toute stack agentique.
+</Note>
+
+<SectionHeader sectionId="pourquoi" label="01" />
+
+<SectionTitle>Pourquoi évaluer et <HighLight accent="green">benchmarker les agents IA</HighLight> ?</SectionTitle>
+
+<Text>Avant de pouvoir déployer et améliorer un agent IA, il est important de pouvoir mesurer ses performances. Cela permet de s'assurer que l'agent répond aux attentes et de détecter rapidement les problèmes qui pourraient survenir.</Text>
+
+<Text>Cela peut sembler évident, car les acteurs logiciels sont habitués à mettre en place des tests unitaires, d'intégration, de régression, etc. pour vérifier le bon fonctionnement de leurs systèmes. Cependant les systèmes basés sur des modèles de langage introduisent une difficulté supplémentaire : ils <HighLight accent="red" bold>produisent des réponses probabilistes et non déterministes</HighLight>. Par conséquent, une même question peut entraîner des réponses différentes, parfois tout à fait acceptables, parfois complètement incorrectes.</Text>
+
+<Text>Par exemple, si nous demandons à un agent de faire un résumé d'un texte. Contrairement à une application classique qui retournerait toujours le même résultat pour une même entrée, un agent IA pourrait produire des résumés différents à chaque exécution. De plus, il n'existe pas nécessairement une "bonne" réponse unique. Deux résumés différents peuvent être tout à fait valides et pertinents, même s'ils ne sont pas identiques. Cela démontre que dans certains cas, le défi n'est pas de savoir si la réponse est "correcte" ou "incorrecte", mais plutôt de juger de sa qualité relative, de sa pertinence et de sa cohérence avec les attentes.</Text>
+
+<Text>Cette nature probabiliste rend donc l'évaluation des agents IA plus complexe qu'un simple test binaire de succès ou d'échec. De plus, il faut trouver des métriques adaptées pour juger de la qualité des réponses, qui parfois peuvent être subjectives et difficiles à quantifier.</Text>
+
+<Text>Pourtant, sans capacité d'évaluation, il devient difficile de savoir si :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Une nouvelle version du modèle est meilleure que la précédente
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Une modification du prompt a amélioré ou dégradé les performances de l'agent
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    Le système continue de fonctionner correctement au fil du temps, ou s'il y a des régressions
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Il y a des cas particuliers où l'agent a du mal à répondre correctement
+  </li>
+</ul>
+
+<Text>L'objectif de l'évaluation n'est donc pas uniquement de mesurer les performances actuelles de l'agent, mais aussi de fournir des données pour guider les améliorations futures, vérifier les régressions potentielles et suivre l'évolution des performances au fil du temps.</Text>
+
+<Note title="À retenir">
+  L'évaluation d'un agent IA ne se résume pas à un test binaire succès/échec. La nature probabiliste des modèles de langage impose de juger la qualité relative des réponses, de détecter les régressions et de suivre l'évolution des performances dans le temps.
+</Note>
+
+<SectionHeader sectionId="benchmarks" label="02" />
+
+<SectionTitle>Benchmarks publics : utiles mais <HighLight accent="purple">souvent insuffisants</HighLight></SectionTitle>
+
+<Text>Pour mesurer les performances d'un agent IA, la communauté a développé de nombreux benchmarks publics. Ces jeux de données standardisés permettent de comparer les performances des modèles sur différents types de tâches comme le raisonnement, la compréhension de texte, la programmation, etc. Parmi les plus connus, on peut citer :</Text>
+
+<div class="grid grid-cols-1 gap-2 my-6">
+  <div class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border">
+    <span class="text-text-secondary text-[15px] font-semibold"><Link href="https://huggingface.co/datasets/cais/mmlu">MMLU</Link></span>
+    <span class="text-text-subtle text-[13px]">— Massive Multitask Language Understanding, un benchmark qui évalue les connaissances académiques des modèles sur plusieurs domaines.</span>
+  </div>
+  <div class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border">
+    <span class="text-text-secondary text-[15px] font-semibold"><Link href="https://huggingface.co/datasets/openai/openai_humaneval">HumanEval</Link></span>
+    <span class="text-text-subtle text-[13px]">— un benchmark qui mesure la capacité des modèles à raisonner et générer du code correct à partir de descriptions en langage naturel.</span>
+  </div>
+  <div class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border">
+    <span class="text-text-secondary text-[15px] font-semibold"><Link href="https://huggingface.co/datasets/openai/gsm8k">GSM8K</Link></span>
+    <span class="text-text-subtle text-[13px]">— un benchmark qui évalue la capacité des modèles à résoudre des problèmes de mathématiques et de logique.</span>
+  </div>
+</div>
+
+<Text>Ces benchmarks sont utiles pour avoir une idée générale des performances d'un modèle sur des tâches standardisées. Cependant, ils ne reflètent pas toujours les cas d'utilisation spécifiques que l'on peut rencontrer dans un contexte réel. Lorsque l'on doit évaluer un agent destiné à être utilisé dans un contexte particulier, ces benchmarks indiquent seulement une tendance générale et ne permettent pas nécessairement de savoir si l'agent sera performant dans le contexte spécifique pour lequel il est conçu.</Text>
+
+<Text>Nous pouvons par exemple constater ce phénomène avec <Link href="https://www.swebench.com/">SWE-Bench</Link>, un benchmark populaire pour évaluer les agents de développement logiciel. Contrairement à HumanEval, qui se concentre sur la génération de code à partir de descriptions en langage naturel, SWE-Bench évalue les agents sur des tâches plus complexes et réalistes, comme la compréhension de code existant, la correction de bugs ou l'optimisation de performances. Un agent peut très bien obtenir un score élevé sur HumanEval mais échouer sur SWE-Bench, car ce dernier teste des compétences plus avancées et spécifiques au développement logiciel.</Text>
+
+<Text>À première vue, il pourrait sembler naturel de considérer qu'un agent obtenant un meilleur score sur SWE-Bench sera également meilleur dans tous les contextes de développement logiciel. Cependant, cette conclusion serait trompeuse.</Text>
+
+<Text>En effet, comme tout benchmark, SWE-Bench repose sur un ensemble de choix qui influencent les résultats. Historiquement, une grande partie des dépôts utilisés dans le benchmark proviennent de projets Python open source. Un agent obtenant un score élevé sur SWE-Bench démontre donc avant tout sa capacité à résoudre des problèmes au sein de projets Python.</Text>
+
+<Text>Or dans de nombreuses entreprises, les applications sont développées dans d'autres langages, comme Java, C++, C#, etc. Un agent qui excelle sur SWE-Bench pourrait donc ne pas être performant dans un contexte de développement logiciel plus généraliste, car il n'a pas été évalué sur des tâches représentatives de ces autres langages.</Text>
+
+<Text>On peut constater cela en regardant le leaderboard de SWE-Bench en Verified (Python only) et dans le benchmark Multilingual.</Text>
+
+<Table
+  title="Top 5 SWE-Bench Verified (Python only) — 18 juin 2026"
+  headers={[
+    { label: "Rang" },
+    { label: "Modèle" },
+    { label: "% Resolved", align: "center" },
+    { label: "Avg. $", align: "center" },
+    { label: "Date", align: "center" },
+    { label: "Agent", align: "center" },
+  ]}
+  rows={[
+    [1, "Claude 4.5 Opus (high reasoning)", "76.80%", "$0.75", "2026-02-17", "2.0.0"],
+    [2, "Gemini 3 Flash (high reasoning)", "75.80%", "$0.36", "2026-02-17", "2.0.0"],
+    [3, "MiniMax M2.5 (high reasoning)", "75.80%", "$0.07", "2026-02-17", "2.0.0"],
+    [4, "Claude Opus 4.6", "75.60%", "$0.55", "2026-02-17", "2.0.0"],
+    [5, "GPT-5-2 Codex", "72.80%", "$0.45", "2026-02-19", "2.0.0"],
+  ]}
+  highlightRows={[0]}
+  highlightColor='red'
+/>
+
+<Table
+  title="Top 5 SWE-Bench Multilingual — 18 juin 2026"
+  headers={[
+    { label: "Rang" },
+    { label: "Modèle" },
+    { label: "% Resolved", align: "center" },
+    { label: "Avg. $", align: "center" },
+    { label: "Date", align: "center" },
+    { label: "Agent", align: "center" },
+  ]}
+  rows={[
+    [1, "Gemini 3 Flash", "72.70%", "$0.35", "2026-02-13", "2.0.0a0"],
+    [2, "Claude 4.6 Opus", "72.00%", "$0.66", "2026-02-13", "2.0.0a0"],
+    [3, "Claude 4.5 Opus", "70.70%", "$0.83", "2026-02-13", "2.0.0a0"],
+    [4, "GLM-5", "69.70%", "$0.64", "2026-02-13", "2.0.0a0"],
+    [5, "Gemini 3 Pro", "68.70%", "$1.02", "2026-02-13", "2.0.0a0"],
+  ]}
+  highlightRows={[2]}
+  highlightColor='red'
+/>
+
+<Text>On peut constater que le classement évolue significativement entre les deux benchmarks. Certains modèles gagnent plusieurs places tandis que d'autres disparaissent complètement du top 5. Pourtant les modèles eux-mêmes n'ont pas changé. La seule différence est le benchmark utilisé pour les évaluer.</Text>
+
+<Text>Il est important de noter que le langage utilisé n'est pas le seul facteur qui peut influencer les performances d'un agent sur un benchmark. D'autres facteurs entrent en jeu :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Les domaines métier représentés dans les données
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Les types de tâches évaluées
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Les outils mis à disposition de l'agent
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Les critères de réussite définis pour chaque tâche
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    La diversité des scénarios testés
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    La difficulté et la nature des problèmes posés
+  </li>
+</ul>
+
+<Text>Tous ces facteurs peuvent influencer les performances d'un agent sur un benchmark donné, et il est donc important de les prendre en compte lors de l'évaluation des agents IA.</Text>
+
+<Text>Ainsi, lorsqu'un agent excelle sur un benchmark, il est important de comprendre que cela indique uniquement ses performances sur l'ensemble de tâches défini par le benchmark, et non sur l'ensemble des situations qu'il pourrait rencontrer en production.</Text>
+
+<Text>Les benchmarks publics sont donc utiles pour avoir une idée générale des performances d'un agent IA, mais ils ne suffisent pas à évaluer sa performance dans un contexte spécifique. Pour cela, il est nécessaire de mettre en place des évaluations personnalisées qui reflètent les cas d'utilisation réels et les exigences spécifiques de l'environnement dans lequel l'agent sera déployé.</Text>
+
+<Note title="À retenir">
+  Un benchmark public mesure une performance sur un ensemble de tâches spécifiques, pas une compétence générale. Les classements varient significativement selon le benchmark utilisé. Pour évaluer un agent dans un contexte métier, il est indispensable de construire ses propres évaluations adaptées à ses cas d'usage.
+</Note>
+
