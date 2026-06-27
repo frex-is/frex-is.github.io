@@ -1,0 +1,46 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro"
+import Header from "@components/navigation/Header.astro"
+import { getCollection } from "astro:content"
+import SearchableBlogList from "@components/blog/SearchableBlogList"
+
+const posts = await getCollection("blog")
+const sortedPosts = posts
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  .map(post => ({
+    slug: post.slug,
+    title: post.data.title,
+    description: post.data.description,
+    date: post.data.date,
+    readingTime: post.data.readingTime,
+    tags: post.data.tags ?? [],
+  }))
+---
+
+<BaseLayout title="Blog">
+  <div class="fixed inset-0 pointer-events-none z-0 opacity-[0.02]"
+    style="background-image:
+      linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+      background-size: 64px 64px;"
+  />
+
+  <Header />
+
+  <div class="relative z-10 min-h-[calc(100vh-4rem)] py-20">
+    <div class="max-w-[1200px] mx-auto px-6 w-full">
+      <div class="max-w-[900px] mx-auto">
+        <h1 class="text-[clamp(1.8rem,3.5vw,2.8rem)] font-extrabold tracking-tight text-text-primary leading-tight">
+          Blog
+        </h1>
+        <p class="text-sm text-text-secondary mt-2">
+          Articles, tutoriels et réflexions sur le développement logiciel, la data engineering et l'architecture système.
+        </p>
+
+        <div class="mt-10">
+          <SearchableBlogList posts={sortedPosts} client:load />
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
