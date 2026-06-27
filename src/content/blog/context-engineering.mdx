@@ -748,13 +748,259 @@ sequenceDiagram
 
 <SectionTitle>Rationalisation : <HighLight accent="yellow">l'efficience par les tools</HighLight></SectionTitle>
 
+<Text>Un agent peut également être optimisé via la structure des tools qu'il utilise. Donner trop d'outils, des outils trop atomiques ou des outils inutiles peuvent nuire à votre agent car cela augmente sa complexité cognitive de la même manière qu'un humain et cela va ralentir ses décisions, augmenter le risque d'erreur et d'hallucinations tout en augmentant sa consommation de token car celui-ci devra plus raisonner pour prendre ses décisions.</Text>
+
+<Text>Pour optimiser cette partie il existe plusieurs stratégies :</Text>
+
+<Title size={3}>La réduction du nombre de tools</Title>
+
+<Text>C'est la manière la plus idiomatique pour redonner de la précision à un agent. Certaines études suggèrent qu'au-delà d'un certain nombre d'outils (~7 selon <a href="https://arxiv.org/html/2605.24660v1" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">How Many Tools Should an LLM Agent See? A Chance-Corrected Answer</a>), les performances de sélection se dégradent fortement.</Text>
+
+<Text>Pour ce faire on a 2 stratégies à ma connaissance :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    La suppression pure et simple des outils non essentiels ou non utilisés par l'agent.
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    Le découpage par spécialisation, en utilisant une architecture <span class="font-mono text-code text-text-primary">"Superviseur / sous-agent"</span> (que nous détaillerons plus tard dans une partie dédiée). Au lieu d'avoir un seul agent avec 20 outils, on crée un superviseur qui distribue les tâches au sous-agent qui aura 6-7 outils spécifiques.
+  </li>
+</ul>
+
+<Title size={3}>Le Tools Batching</Title>
+
+<Text>Cette seconde stratégie consiste à éliminer l'enchaînement de tools répétitifs et prévisibles. Par exemple, si on remarque qu'un agent appelle systématiquement l'outil A, attend le résultat puis appelle l'outil B par exemple <span class="font-mono text-code text-accent-cyan">lire_log</span> puis <span class="font-mono text-code text-accent-cyan">extraire_erreur</span>. Laisser l'agent faire cela va augmenter sa consommation de token et la latence, car celui-ci va devoir raisonner entre chaque étape.</Text>
+
+<Text>La solution est donc de fusionner ces 2 outils dans un script. Au lieu de donner 2 outils atomiques à l'agent, on lui fournit un outil packagé. Exemple <span class="font-mono text-code text-accent-cyan">diagnostique_erreur</span>. L'agent déléguera donc l'ensemble de la chaîne d'exécution au script, économisant ainsi plusieurs cycles de réflexion coûteux.</Text>
+
+```mermaid
+graph TD
+    subgraph Approche Naïve : Chaining Inutile
+    A[Question] --> Agent1[Agent]
+    Agent1 -->|Appel LLM $| T1[Tool A: lire_logs]
+    T1 --> Agent1
+    Agent1 -->|Appel LLM $| T2[Tool B: extraire_erreur]
+    end
+
+    subgraph Approche Optimisée : Tools Batching
+    B[Question] --> Agent2[Agent]
+    Agent2 -->|Un seul appel $| MT[Macro-Tool: diagnostiquer_erreur]
+    end
+```
+
 <SectionHeader sectionId="agent" label="08" />
 
 <SectionTitle>Architecture <HighLight accent="cyan">Supervisor / Sub-agent</HighLight></SectionTitle>
 
+<Text>Au vu de ce qui a été vu avant on peut tirer un constat. C'est que quand un système doit gérer un grand nombre de fonctionnalités, l'agent unique perd sa performance à cause de ses outils, de sa taille de contexte etc. Pour essayer de solutionner ce problème, on a mis à inventer le pattern supervisor / sub-agent.</Text>
+
+<Text>Cette architecture part d'un constat simple, un agent unique peut posséder trop de responsabilités. De ce fait l'architecture multi agents peut être vue comme une stratégie de partitionnement du contexte</Text>
+
+```mermaid
+graph TD
+    User([Utilisateur]) -->|1. Requête globale| Supervisor[Agent Superviseur<br/>Outil: Assigner_Tâche]
+    
+    subgraph Espace Cognitif Léger et Isolé
+    Supervisor -->|2. Route via Tool Handoff| AgentDev[Sous-Agent Dev<br/>3 tools de code]
+    Supervisor -->|2. Route via Tool Handoff| AgentSupport[Sous-Agent Support<br/>2 tools de ticketing]
+    end
+    
+    AgentDev -->|3. Retourne le résultat brut| Supervisor
+    AgentSupport -->|3. Retourne le résultat brut| Supervisor
+    Supervisor -->|4. Synthèse finale| User
+```
+
+<Text><strong class="text-text-primary">Les avantages de ce pattern :</strong></Text>
+
+<ul class="space-y-2 my-4 ml-2">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <strong class="text-text-secondary">Isolation sémantique et cognitive :</strong> Chaque sous-agent évolue dans un contexte qui lui est propre et n'a accès qu'aux outils strictement nécessaires.
+  </li>
+</ul>
+
+<div class="overflow-x-auto my-6">
+  <table class="w-full text-[15px] border-collapse">
+    <thead>
+      <tr class="border-b border-border">
+        <th class="text-left py-3 px-4 text-text-secondary font-semibold">Type</th>
+        <th class="text-center py-3 px-4 text-text-secondary font-semibold">Avantage</th>
+        <th class="text-center py-3 px-4 text-text-secondary font-semibold">Inconvénient</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="border-b border-border">
+        <td class="py-3 px-4 text-text-muted">Agent générique</td>
+        <td class="py-3 px-4 text-center text-text-muted">flexible</td>
+        <td class="py-3 px-4 text-center text-text-muted">bruit cognitif</td>
+      </tr>
+      <tr class="border-b border-border">
+        <td class="py-3 px-4 text-text-muted">Agent spécialisé</td>
+        <td class="py-3 px-4 text-center text-text-muted">efficace</td>
+        <td class="py-3 px-4 text-center text-text-muted">moins adaptable</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<ul class="space-y-2 my-4 ml-2">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <strong class="text-text-secondary">Spécialisation des modèles :</strong> on va pouvoir choisir le modèle utilisé par chaque agent de la chaîne, par exemple utiliser un modèle plus performant en logique pour le superviseur, tandis que nos sous-agents pourront tourner sur des modèles beaucoup plus spécialisés, plus rapides et moins coûteux. Chaque agent aura une fenêtre contextuelle qui lui est propre et donc pourra également être plus détaillée car on encadrera mieux le travail qu'il devra exécuter.
+  </li>
+</ul>
+
+<Text><strong class="text-text-primary">Les inconvénients :</strong></Text>
+
+<ul class="space-y-3 my-4 ml-2">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    <div>
+      <strong class="text-text-secondary">Superviseur comme point de saturation :</strong> même si les sous-agents ont leur charge cognitive réduite, la complexité du système ne disparaît pas, elle est simplement déplacée vers le superviseur.
+    </div>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    <div>
+      <strong class="text-text-secondary">Propagation d'erreur / hallucination :</strong> si un modèle hallucine ou propage une erreur cela se répercute sur l'ensemble de la chaîne et peut même créer une boucle infinie d'appel entre les agents ce qui coûte cher (Les frameworks pour multi agent implémentent tout de même des protections (TTL, Tool call limit, etc.) contre cela, mais cela représente quand même un coût non négociable).
+    </div>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    <div>
+      <strong class="text-text-secondary">Perte de contexte pour les sous-agents :</strong> Pour garder les sous-agents légers, on évite de leur transférer l'intégralité de l'historique de la discussion et on leur donne un résumé.
+    </div>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    <div>
+      <strong class="text-text-secondary">Augmentation des coûts :</strong> pour répondre à une question l'utilisateur ne fait plus un seul appel LLM, mais une chaîne d'appels. Par exemple dans l'architecture suivante :
+    </div>
+  </li>
+</ul>
+
+```mermaid
+graph LR
+    linkStyle default stroke:#eee,stroke-width:1.5px;
+
+    User([User Request])
+    Router[Router]
+    AgentA[Agent A]
+    AgentB[Agent B]
+    AgentC[Agent C]
+    Synth[Synthesizer]
+    Final([Final Response])
+
+    User --> Router
+    Router --> AgentA
+    Router --> AgentB
+    Router --> AgentC
+    AgentA --> Synth
+    AgentB --> Synth
+    AgentC --> Synth
+    Synth --> Final
+
+    style User fill:#fff,stroke:#0066cc,stroke-width:2px,color:#0066cc
+    style Final fill:#fff,stroke:#0066cc,stroke-width:2px,color:#0066cc
+
+    style Router fill:#fff,stroke:#800080,stroke-width:2px,color:#800080
+    style Synth fill:#fff,stroke:#800080,stroke-width:2px,color:#800080
+
+    style AgentA fill:#fff,stroke:#cc0000,stroke-width:2px,color:#cc0000
+    style AgentB fill:#fff,stroke:#cc0000,stroke-width:2px,color:#cc0000
+    style AgentC fill:#fff,stroke:#cc0000,stroke-width:2px,color:#cc0000
+```
+
+<Text>on se retrouvera avec :</Text>
+
+<div class="my-4 p-4 rounded-block bg-surface-card border border-border text-center font-mono text-code text-text-primary">
+  Appel global = LLM Superviseur (Routage) + LLM Sous-Agent (Exécution) + LLM Superviseur (Synthèse)
+</div>
+
+<Text>Si nos agents doivent échanger des rapports ou faire des allers-retours, le nombre de requêtes API peut exploser.</Text>
+
+<Text>Il sera tout de même important de prendre en compte qu'il existe plusieurs types d'architecture multi-agent comme le montre <a href="https://www.langchain.com/blog/choosing-the-right-multi-agent-architecture" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">l'article suivant</a> et que chaque architecture possède ses best practices et ses trade offs. C'est donc un pattern à adapter à chaque projet.</Text>
+
 <SectionHeader sectionId="synthese" label="synthèse" />
 
 <SectionTitle>Synthèse : le contexte, <HighLight accent="green">ressource critique</HighLight></SectionTitle>
+
+<Text>Au travers de ces différents exemples, on peut tirer une conclusion assez claire : le principal facteur limitant des agents IA n'est pas uniquement lié à la qualité du modèle utilisé, mais surtout à la manière dont on structure l'ensemble de son environnement de travail.</Text>
+
+<Text>Le contexte devient une nouvelle <HighLight accent="green" bold>ressource critique</HighLight> au même titre que la RAM, le processeur, etc. Plus un agent doit manipuler d'informations, de tools, etc., plus ses performances se dégradent :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Augmentation du bruit décisionnel
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Perte de précision
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Hausse des hallucinations
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Augmentation des coûts
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Augmentation du temps de réponse
+  </li>
+</ul>
+
+<Text>L'enjeu majeur des utilisateurs d'agents IA à grande échelle consiste donc à gérer cette pression contextuelle.</Text>
+
+<Text>Cela passe par plusieurs stratégies :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Limiter les capacités globales
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Concevoir des architectures logicielles lisibles et modulaires
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Compacter intelligemment le contexte
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Rationaliser les tools
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    Utiliser des architectures multi-agents lorsque la complexité devient importante
+  </li>
+</ul>
+
+<Text>Cependant ces optimisations ne sont pas gratuites :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    Pertes potentielles d'information
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    Augmentation de la complexité système
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    Hausse des coûts
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    Propagation d'erreurs entre agents
+  </li>
+</ul>
 
 <SectionHeader sectionId="references" label="références" />
 
