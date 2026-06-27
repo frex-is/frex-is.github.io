@@ -10,6 +10,8 @@ import { fileURLToPath } from 'url'
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
+  site: "https://frex-is.github.io",
+  base: "/astro-website/",
   markdown: {
     syntaxHighlight: {
       type: 'shiki',
