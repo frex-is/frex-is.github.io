@@ -494,6 +494,169 @@ Agrandir la fenêtre de contexte n'améliore pas automatiquement un agent. La qu
 
 <SectionTitle>La compaction : <HighLight accent="green">réduire la taille du contexte</HighLight></SectionTitle>
 
+<Text>La compaction du contexte est une technique qui consiste à réduire la taille du contexte en supprimant les informations inutiles ou redondantes, ou en les résumant de manière à ce qu'elles prennent moins de place.</Text>
+
+<Note title="Attention" variant="warning">
+  Il existe plusieurs techniques de compaction, certaines possèdent des pertes d'information et d'autres non. Il est donc important d'avoir une bonne compréhension de ces techniques avant de les utiliser.
+</Note>
+
+<Text>Voici quelques techniques de compaction du contexte :</Text>
+
+<SectionHeader sectionId="deletion" label="05.1" />
+
+<Title size={3}>Compaction par suppression</Title>
+
+<Text>Cette technique est la plus simple : elle consiste à supprimer les informations qui ne sont pas nécessaires pour accomplir une tâche. La plupart du temps cela se traduira par la suppression de la session courante de conversation, généralement en faisant un <span class="font-mono text-code text-accent-cyan">/new</span> dans OpenCode et en supprimant les anciennes sessions.</Text>
+
+<Note title="Attention" variant="warning">
+  Un <span class="font-mono text-code text-accent-cyan">/new</span> dans OpenCode ne supprime pas la mémoire de l'agent, il supprime uniquement la session courante de conversation. Les informations contenues dans la mémoire de l'agent (fichiers de mémoire, notes, etc.) ne sont pas supprimées et peuvent toujours être utilisées. Il est donc important de faire le ménage régulièrement dans ses sessions et les supprimer lorsqu'elles ne sont plus nécessaires, pour éviter d'avoir un contexte trop chargé et préserver les performances de l'agent.
+</Note>
+
+<SectionHeader sectionId="resume" label="05.2" />
+
+<Title size={3}>Compaction par résumé</Title>
+
+<Text>Cette technique consiste à résumer les informations du contexte de manière à ce qu'elles prennent moins de place, tout en conservant l'essentiel de l'information. Contrairement à la suppression, l'agent utilise ici sa propre intelligence (ou un autre modèle spécialisé dans le résumé) pour compresser les informations du contexte. La qualité de la compaction dépendra donc directement de la qualité du modèle utilisé.</Text>
+
+<Text>C'est la méthode utilisée quand un utilisateur fait <span class="font-mono text-code text-accent-cyan">compact session</span> dans OpenCode.</Text>
+
+<Note title="Attention" variant="warning">
+  Cette technique entraîne forcément des pertes d'information car le résumé peut omettre des détails qui semblaient inutiles sur le moment. Cette action doit donc être utilisée avec précaution.
+</Note>
+
+<Text>Dans la pratique, il est préférable de l'utiliser quand le contexte n'est pas encore trop chargé (~60 % de la fenêtre de contexte maximum) car plus le contexte sera chargé, plus le résumé sera de mauvaise qualité et plus il y aura de pertes d'information. De plus, ne pas attendre la compaction automatique peut permettre de passer des instructions de compaction si l'outillage le permet.</Text>
+
+<Text>Par exemple, dans Claude Code on peut faire :</Text>
+
+<div class="flex items-center gap-3 p-3 my-4 rounded-block bg-surface-card border border-border font-mono text-code text-text-muted">
+  <Icon name="lucide:terminal" class="shrink-0 size-[16px] text-accent-cyan" />
+  /compact garde en priorité le schéma de la base de données
+</div>
+
+<SectionHeader sectionId="selection" label="05.3" />
+
+<Title size={3}>Compaction par sélection</Title>
+
+<Text>Cette technique consiste à remplacer une implémentation complète par une représentation plus compacte du système. On peut autant l'appliquer sur l'input que sur l'output de l'agent.</Text>
+
+<Text>Quelques exemples concrets de compaction par sélection :</Text>
+
+<Title size={3}>Toon (Token Oriented Object Notation)</Title>
+
+<div class="pl-8">
+  <Text>Toon est un format de sérialisation de données orienté token, conçu pour être utilisé dans les contextes d'agents IA. Il permet de représenter des objets complexes de manière compacte, en utilisant une syntaxe simple et facile à comprendre pour les modèles de langage.</Text>
+
+  <Text>Voici un exemple de données sérialisées en format JSON :</Text>
+
+  <CodeBlock code={`{
+    "context": {
+      "task": "Our favorite hikes together",
+      "location": "Boulder",
+        "season": "spring_2025"
+      },
+      "friends": ["ana", "luis", "sam"],
+      "hikes": [
+        {
+          "id": 1,
+          "name": "Blue Lake Trail",
+          "distanceKm": 7.5,
+          "elevationGain": 320,
+          "companion": "ana",
+          "wasSunny": true
+        },
+        {
+          "id": 2,
+          "name": "Ridge Overlook",
+          "distanceKm": 9.2,
+          "elevationGain": 540,
+          "companion": "luis",
+          "wasSunny": false
+        },
+        {
+          "id": 3,
+          "name": "Wildflower Loop",
+          "distanceKm": 5.1,
+          "elevationGain": 180,
+          "companion": "sam",
+          "wasSunny": true
+        }
+      ]
+    }`} lang="json" title="data.json" />
+
+    <Text>Peut être sérialisé en format Toon de la manière suivante :</Text>
+
+    <CodeBlock code={`context:
+      task: Our favorite hikes together
+      location: Boulder
+      season: spring_2025
+    friends[3]: ana,luis,sam
+    hikes[3]{id,name,distanceKm,elevationGain,companion,wasSunny}:
+      1,Blue Lake Trail,7.5,320,ana,true
+      2,Ridge Overlook,9.2,540,luis,false
+      3,Wildflower Loop,5.1,180,sam,true`} lang="text" title="Toon" />
+  </div>
+
+  <Title size={3}>Caveman</Title>
+
+  <div class="pl-8">
+  <Text>Caveman est un outil qui va effectuer la compression directement sur l'output. Pour ce faire, il va demander aux modèles d'appliquer quelques contraintes visibles <a href="https://github.com/anthropics/claude-code/blob/main/Caveman.md" class="text-accent-cyan hover:underline" target="_blank" rel="noopener noreferrer">ici</a>.</Text>
+
+  <Text>Exemple de compression avec Caveman :</Text>
+
+  <Text>Réponse classique d'un agent sans Caveman :</Text>
+
+  <Note title="69 Tokens">
+    The reason your React component is re-rendering is likely because you're creating a new object reference on each render cycle. When you pass an inline object as a prop, React's shallow comparison sees it as a different object every time, which triggers a re-render. I'd recommend using useMemo to memoize the object.
+  </Note>
+
+  <Text>Réponse en utilisant les contraintes de Caveman :</Text>
+
+  <Note title="19 Tokens" variant="success">
+    New object ref each render. Inline object prop = new ref = re-render. Wrap in useMemo.
+  </Note>
+
+  <Text>En moyenne, selon les mainteneurs du projet, il y a une économie de ~75 % de tokens de sortie.</Text>
+</div>
+
+<Text>Les principaux avantages de ce genre d'outils sont :</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:maximize" class="mt-1 shrink-0 size-[18px] text-accent-green" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Contexte de message réduit</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Utilisation plus longue d'un même contexte</p>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:zap" class="mt-1 shrink-0 size-[18px] text-accent-cyan" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Accélération du temps de réponse</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Réduction du nombre de tokens de sortie</p>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:coins" class="mt-1 shrink-0 size-[18px] text-accent-yellow" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Réduction de la consommation de tokens</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Les tokens de sortie sont plus chers, la facture API est réduite</p>
+    </div>
+  </li>
+</ul>
+
+<Text>Cependant, il est important de noter que dans certains cas d'usage l'outil n'est pas adapté, par exemple :</Text>
+
+<ul class="space-y-2 my-4 ml-2">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    <strong class="text-text-secondary">Dégradation du raisonnement complexe :</strong> Pour des tâches de raisonnement complexes, les modèles semblent souvent bénéficier d'une génération intermédiaire de tokens permettant d'expliciter une partie du raisonnement. En le forçant à compresser ses pensées immédiatement, on affecte sa capacité de logique, ce qui augmente le risque d'erreur et d'hallucinations.
+  </li>
+</ul>
+
+<Note title="À retenir" variant="info">
+  La compaction par sélection est particulièrement efficace sur l'output. Des outils comme Caveman permettent d'économiser jusqu'à <HighLight accent="green" bold>75 % de tokens de sortie</HighLight>, mais attention à ne pas l'utiliser sur des tâches de raisonnement complexe.
+</Note>
+
 <SectionHeader sectionId="rag" label="06" />
 
 <SectionTitle>RAG : <HighLight accent="cyan">Raisonnement & Données</HighLight></SectionTitle>
