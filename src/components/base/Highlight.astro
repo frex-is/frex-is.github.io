@@ -1,6 +1,7 @@
 ---
 export interface Props {
   accent: keyof typeof accentColors;
+  bold?: boolean;
 }
 
 const accentColors = {
@@ -11,12 +12,13 @@ const accentColors = {
   purple: '#818cf8',
 }
 
-const { accent } = Astro.props as Props;
+const { accent, bold } = Astro.props as Props;
 const color = accentColors[accent];
+const fontWeight = bold ? '700' : 'inherit';
 ---
 
 {color ? (
-  <span style={{ color }}><slot /></span>
+  <span style={{ color, fontWeight }}><slot /></span>
 ) : (
-  <span><slot /></span>
+  <span style={{ fontWeight }}><slot /></span>
 )}

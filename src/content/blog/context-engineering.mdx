@@ -17,7 +17,7 @@ tableOfContent:
   label: "2. Limit & dégradation"
 
 - id: "bruit"
-  label: "3. Bruit Décisionel"
+  label: "3. Bruit Décisionnel"
 
 - id: "archi"
   label: "4. Architecture & Performance"
@@ -152,6 +152,140 @@ Agrandir la fenêtre de contexte n'améliore pas automatiquement un agent. La qu
 
 <SectionTitle>Capacités globales & <HighLight accent="yellow">bruit décisionnel</HighLight></SectionTitle>
 
+<Text>Les capacités globales sont les outils, les compétences, les serveurs MCP, etc, qui sont disponibles pour tous les agents. Ils se situent généralement dans les répertoires au niveau de l'utilisateur (<span class="font-mono text-code text-accent-cyan">~/.opencode/</span>).</Text>
+
+<Text>Dans la pratique, il est souvent préférable de <HighLight accent="yellow">limiter les capacités globales</HighLight> autant que possible, car elles sont partagées entre tous les agents. Même lorsque les capacités globales ne sont jamais utilisées, leurs descriptions et leurs schémas sont souvent injectés dans le contexte. Cela a plusieurs conséquences néfastes :</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:file-text" class="mt-1 shrink-0 size-[18px] text-accent-red" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Augmentation inutile de la taille du contexte</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Avec tout ce que cela implique (cf. chapitre contexte)</p>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:git-branch" class="mt-1 shrink-0 size-[18px] text-accent-yellow" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Augmentation du bruit décisionnel</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Plus un agent a de capacités, plus il a de choix à faire</p>
+    </div>
+  </li>
+</ul>
+
+<Text>J'utilise ici le terme de <HighLight accent="yellow" bold>bruit décisionnel</HighLight> pour désigner le fait que plus un agent a de capacités à sa disposition, plus il a de choix à faire pour décider quelle capacité utiliser pour accomplir une tâche.</Text>
+
+<Text>Par exemple, imaginons un agent qui possède les compétences suivantes :</Text>
+
+<div class="grid grid-cols-2 gap-3 my-6">
+  <div class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border">
+    <Icon name="lucide:search" class="shrink-0 size-[16px] text-accent-cyan" />
+    <span class="font-mono text-code text-text-muted">search_code</span>
+  </div>
+  <div class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border">
+    <Icon name="lucide:search" class="shrink-0 size-[16px] text-accent-cyan" />
+    <span class="font-mono text-code text-text-muted">grep_code</span>
+  </div>
+  <div class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border">
+    <Icon name="lucide:search" class="shrink-0 size-[16px] text-accent-cyan" />
+    <span class="font-mono text-code text-text-muted">find_in_files</span>
+  </div>
+  <div class="flex items-center gap-3 p-3 rounded-block bg-surface-card border border-border">
+    <Icon name="lucide:search" class="shrink-0 size-[16px] text-accent-cyan" />
+    <span class="font-mono text-code text-text-muted">semantic_search_code</span>
+  </div>
+</div>
+
+<Text>Toutes ces compétences accomplissent à peu près la même chose : trouver du code dans un projet. Imaginons que l'utilisateur demande :</Text>
+
+<Note title="Exemple" variant="warning">
+  Trouve moi la classe <span class="font-mono text-code text-text-primary">UserService</span> dans le projet.
+</Note>
+
+<Text>L'agent va devoir faire un choix entre les 4 compétences pour accomplir la tâche. Pour ce faire, il va :</Text>
+
+<ol class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    Comparer les outils
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    Comprendre les différences entre les outils
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    Choisir lequel est le plus adapté à la tâche
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Parfois hésiter ou utiliser le mauvais outil
+  </li>
+</ol>
+
+<Text>Les conséquences de ce bruit décisionnel sont :</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:clock" class="mt-1 shrink-0 size-[18px] text-accent-cyan" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Augmentation du temps de réponse</span>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:alert-triangle" class="mt-1 shrink-0 size-[18px] text-accent-red" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Possibilité d'erreur dans le choix de la capacité</span>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:coins" class="mt-1 shrink-0 size-[18px] text-accent-green" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Augmentation du coût en token</span>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:trending-down" class="mt-1 shrink-0 size-[18px] text-accent-pink" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Diminution de la performance globale de l'agent</span>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:clipboard" class="mt-1 shrink-0 size-[18px] text-accent-yellow" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Difficulté à suivre les instructions système</span>
+    </div>
+  </li>
+</ul>
+
+<Text>À noter que le bruit décisionnel ne vient pas uniquement des capacités globales, mais aussi :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-red"></span>
+    Des instructions système trop vagues, nombreuses ou contradictoires
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-pink"></span>
+    De prompts d'entrée trop longs ou trop complexes
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    D'une architecture de code mal organisée ou trop complexe
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    D'un RAG qui retourne trop de résultats non pertinents
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    D'un historique de conversation trop long ou non pertinent
+  </li>
+</ul>
+
+<Note title="À retenir" variant="info">
+  Limiter les capacités globales au strict nécessaire et réduire le bruit décisionnel est l'un des leviers les plus efficaces pour améliorer les performances d'un agent.
+</Note>
 
 <SectionHeader sectionId="archi" label="04" />
 
@@ -165,11 +299,11 @@ Agrandir la fenêtre de contexte n'améliore pas automatiquement un agent. La qu
 
 <SectionTitle>RAG : <HighLight accent="cyan">Raisonnement & Données</HighLight></SectionTitle>
 
-<SectionHeader sectionId="rationalisation" label="06" />
+<SectionHeader sectionId="rationalisation" label="07" />
 
 <SectionTitle>Rationalisation : <HighLight accent="yellow">l'efficience par les tools</HighLight></SectionTitle>
 
-<SectionHeader sectionId="agent" label="07" />
+<SectionHeader sectionId="agent" label="08" />
 
 <SectionTitle>Architecture <HighLight accent="cyan">Supervisor / Sub-agent</HighLight></SectionTitle>
 
