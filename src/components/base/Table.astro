@@ -1,13 +1,16 @@
 ---
+export type HighlightColor = 'cyan' | 'green' | 'red' | 'yellow' | 'purple'
+
 export interface Props {
   title?: string
   headers: { label: string; align?: 'left' | 'center' | 'right' }[]
   rows: (string | number)[][]
   highlightRows?: number[]
-  highlightColor?: 'cyan' | 'green' | 'red' | 'yellow' | 'purple'
+  highlightColor?: HighlightColor
+  rowColors?: Partial<Record<number, HighlightColor>>
 }
 
-const { title, headers, rows, highlightRows, highlightColor = 'cyan' } = Astro.props
+const { title, headers, rows, highlightRows, highlightColor = 'cyan', rowColors } = Astro.props
 
 const alignClass: Record<string, string> = {
   left: 'text-left',
@@ -39,10 +42,11 @@ const alignClass: Record<string, string> = {
     <tbody>
       {rows.map((row, i) => {
         const isHighlight = highlightRows?.includes(i)
+        const rowColor = rowColors?.[i] ?? (isHighlight ? highlightColor : undefined)
         return (
         <tr class:list={[
           'border-b border-border', 
-          isHighlight && `text-accent-${highlightColor}`
+          rowColor && `text-accent-${rowColor}`
         ]}>
           {row.map((cell, i) => (
             <td

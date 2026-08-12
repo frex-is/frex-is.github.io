@@ -1,9 +1,10 @@
 ---
 export interface Props {
   size?: 1 | 2 | 3
+  id?: string
 }
 
-const { size = 2 } = Astro.props as Props
+const { size = 2, id } = Astro.props as Props
 
 const styles: Record<number, string> = {
   1: 'text-[clamp(2rem,4vw,2.5rem)] font-extrabold tracking-tight',
@@ -12,6 +13,6 @@ const styles: Record<number, string> = {
 }
 ---
 
-<div class=`text-text-primary mb-4 ${styles[size]}`>
+<div id={id} class=`text-text-primary mb-4 ${styles[size]}`>
   <slot />
 </div>
