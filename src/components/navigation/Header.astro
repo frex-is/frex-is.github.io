@@ -5,7 +5,7 @@ import { NAVIGATION, type NavLink } from "@config/navigation"
 
 <header class="sticky top-0 z-50 backdrop-blur-md border-b border-border bg-surface/80">
     <nav 
-        class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between" 
+        class="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between" 
         aria-label="Main navigation"
     >
         <a 
@@ -16,7 +16,7 @@ import { NAVIGATION, type NavLink } from "@config/navigation"
             {SITE.title}
         </a>
 
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-4 sm:gap-6">
             {NAVIGATION.links.map((link: NavLink) => (
                 <a 
                     href={link.href}

@@ -91,7 +91,7 @@ export default function SearchableBlogList({ posts }: Props) {
       </p>
 
       {filteredPosts.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           {filteredPosts.map(post => (
             <a
               key={post.slug}

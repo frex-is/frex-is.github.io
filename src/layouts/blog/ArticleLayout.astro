@@ -23,13 +23,13 @@ const { title, description, date, readingTime, tags } = Astro.props
         <slot name="hero" />
     </Fragment>
 
-    <div class="max-w-[1200px] mx-auto pl-3 pr-6">
-        <div class="grid grid-cols-12 gap-12">
-            <aside class="col-span-3">
+    <div class="max-w-[1200px] mx-auto px-4 sm:px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            <aside class="hidden lg:block lg:col-span-3">
                 <slot name="tableOfContent" />
             </aside>
 
-            <div class="col-span-9 pb-20">
+            <div class="lg:col-span-9 pb-16 lg:pb-20">
                 <slot />
             </div>
         </div>

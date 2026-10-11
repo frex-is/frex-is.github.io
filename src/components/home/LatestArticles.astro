@@ -10,7 +10,7 @@ const { posts } = Astro.props
 
 <section>
   <h2 class="text-lg font-bold text-text-primary mb-4">Derniers articles</h2>
-  <div class="grid grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     {posts.map((post: CollectionEntry<"blog">) => (
       <a
         href={`/blog/${post.slug}`}
