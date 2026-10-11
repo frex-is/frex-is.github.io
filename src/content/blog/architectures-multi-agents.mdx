@@ -106,6 +106,7 @@ import { Icon } from 'astro-icon/components'
 import Title from '@components/base/Title.astro'
 import Link from '@components/base/Link.astro'
 import Table from '@components/base/Table.astro'
+import MaturityBadge from '@components/articles/MaturityBadge.astro'
 import DecisionCard from '@components/articles/DecisionCard.astro'
 import MechanismCatalog from '@components/articles/MechanismCatalog.astro'
 import AxisGrid from '@components/articles/AxisGrid.astro'
@@ -306,7 +307,10 @@ import AxisGrid from '@components/articles/AxisGrid.astro'
 
 <SectionHeader sectionId="orchestrator" label="04.1" />
 
-<Title size={3}>Orchestrator-Worker</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Orchestrator-Worker</Title>
+</div>
 
 <Text>Un agent central — l'<HighLight accent="cyan" bold>orchestrateur</HighLight> — reçoit la tâche globale, la découpe en sous-tâches, les <HighLight accent="cyan" bold>délègue à des workers spécialisés</HighLight>, puis collecte, filtre et agrège leurs résultats. Contrairement à la parallélisation simple, les sous-tâches ne sont <strong class="text-text-secondary">pas prédéfinies</strong> : l'orchestrateur décide dynamiquement quoi déléguer.</Text>
 
@@ -349,7 +353,10 @@ sequenceDiagram
 
 <SectionHeader sectionId="chain" label="04.2" />
 
-<Title size={3}>Sequential Chain</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Sequential Chain</Title>
+</div>
 
 <Text>Les étapes interviennent <strong class="text-text-secondary">les unes après les autres</strong> : la sortie de l'étape N devient l'entrée de l'étape N+1. C'est le mécanisme le plus simple : <HighLight accent="green">linéaire, déterministe, prévisible</HighLight>. On y ajoute souvent des <HighLight accent="green">gates</HighLight> de qualité entre les étapes.</Text>
 
@@ -384,7 +391,10 @@ sequenceDiagram
 
 <SectionHeader sectionId="router" label="04.3" />
 
-<Title size={3}>Router</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Router</Title>
+</div>
 
 <Text>Une couche de <HighLight accent="cyan" bold>routage</HighLight> classe la requête (intention, thème, difficulté) et la redirige vers <strong class="text-text-secondary">un seul</strong> sous-système expert. Contrairement à l'orchestrateur : ni découpage, ni agrégation. Le routeur est souvent doublé : un <HighLight accent="green">classifieur léger</HighLight> fait le premier tri, et un LLM prend le relais en cas de faible confiance (voir Cascade de modèles).</Text>
 
@@ -417,7 +427,10 @@ flowchart TD
 
 <SectionHeader sectionId="parallel" label="04.4" />
 
-<Title size={3}>Parallel Branching (Fan-Out / Fan-In)</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Parallel Branching (Fan-Out / Fan-In)</Title>
+</div>
 
 <Text>Une tâche est distribuée à plusieurs branches indépendantes (<HighLight accent="cyan">fan-out</HighLight>), puis une étape d'agrégation combine les sorties (<HighLight accent="cyan">fan-in</HighLight>). Deux variantes canoniques : le <strong class="text-text-secondary">sectioning</strong> (chaque branche traite une portion distincte) et le <strong class="text-text-secondary">voting</strong> (plusieurs branches produisent la même sortie — voir Consensus).</Text>
 
@@ -447,7 +460,10 @@ flowchart TD
 
 <SectionHeader sectionId="hierarchie" label="04.5" />
 
-<Title size={3}>Hierarchical Tree</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Émergent" />
+  <Title size={3}>Hierarchical Tree</Title>
+</div>
 
 <Text>Structure à <strong class="text-text-secondary">plusieurs niveaux</strong> : un manager général délègue à des managers intermédiaires, qui pilotent chacun leur équipe. C'est l'extension d'Orchestrator-Worker quand le nombre d'agents devient trop grand pour qu'un seul superviseur garde une vision claire : chaque niveau <HighLight accent="green">réduit la portée de contrôle</HighLight> et compartimente le contexte.</Text>
 
@@ -487,7 +503,19 @@ flowchart TD
 
 <Text>Les mécanismes de communication apportent des garanties qui ne découlent <strong class="text-text-secondary">pas automatiquement</strong> de leur topologie. Il faut distinguer la topologie des agents des garanties du système distribué sous-jacent.</Text>
 
-<Text><strong class="text-text-primary">Dynamic Task Allocation.</strong> Les tâches sont déposées dans un pool central ; chaque agent évalue ses capacités et se porte candidat par une « enchère ». Des travaux récents (<HighLight accent="cyan">AgentLance</HighLight>, <HighLight accent="cyan">Agora</HighLight>) étudient réellement ce mécanisme — mais passer de « des recherches explorent ce mécanisme » à « c'est prêt pour la production » est un <HighLight accent="red" bold>saut non démontré</HighLight>. Une enchère n'a de sens que si les agents ont des compétences ou des coûts réellement différents, si l'on dispose de mesures de performance fiables, et si le coût de l'enchère est inférieur au bénéfice de l'allocation. <strong class="text-text-secondary">En pratique, une simple file de tâches avec des workers spécialisés suffit presque toujours.</strong></Text>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Exploratoire" />
+  <Title size={3}>Dynamic Task Allocation</Title>
+</div>
+
+<Text>Les tâches sont déposées dans un pool central ; chaque agent évalue ses capacités et se porte candidat par une « enchère ». Des travaux récents (<HighLight accent="cyan">AgentLance</HighLight>, <HighLight accent="cyan">Agora</HighLight>) étudient réellement ce mécanisme — mais passer de « des recherches explorent ce mécanisme » à « c'est prêt pour la production » est un <HighLight accent="red" bold>saut non démontré</HighLight>. Une enchère n'a de sens que si les agents ont des compétences ou des coûts réellement différents, si l'on dispose de mesures de performance fiables, et si le coût de l'enchère est inférieur au bénéfice de l'allocation. <strong class="text-text-secondary">En pratique, une simple file de tâches avec des workers spécialisés suffit presque toujours.</strong></Text>
+
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Exploratoire" />
+  <Title size={3}>Peer-to-Peer</Title>
+</div>
+
+<Text>Aucun orchestrateur : les agents communiquent directement et décident à qui transférer le contexte. La coordination est <HighLight accent="purple">émergente</HighLight>. Usage type : négociation acheteur/vendeur. Bénéfice annoncé : pas de point unique de défaillance <em>côté agents</em>. Nuance : supprimer le superviseur ne supprime pas les points uniques de l'<strong class="text-text-secondary">infrastructure</strong>. <strong class="text-accent-red">Aucune garantie de convergence.</strong></Text>
 
 ```mermaid
 flowchart LR
@@ -496,11 +524,19 @@ flowchart LR
     N3 <-->|"partage de contexte"| N1
 ```
 
-<Text><strong class="text-text-primary">Peer-to-Peer.</strong> Aucun orchestrateur : les agents communiquent directement et décident à qui transférer le contexte. La coordination est <HighLight accent="purple">émergente</HighLight>. Usage type : négociation acheteur/vendeur. Bénéfice annoncé : pas de point unique de défaillance <em>côté agents</em>. Nuance : supprimer le superviseur ne supprime pas les points uniques de l'<strong class="text-text-secondary">infrastructure</strong>. <strong class="text-accent-red">Aucune garantie de convergence.</strong></Text>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Exploratoire" />
+  <Title size={3}>Blackboard</Title>
+</div>
 
-<Text><strong class="text-text-primary">Blackboard.</strong> Tous les agents lisent et écrivent dans un espace d'état central partagé ; un contrôleur sélectionne l'agent compétent pour traiter les données « mûres ». C'est une mémoire partagée + contrôle opportuniste : l'ordre des étapes n'est pas connu à l'avance. Nuance décisive : partager un état ne garantit <HighLight accent="red" bold>ni consensus ni convergence</HighLight>. Il faut définir des règles de conflit, des versions et des conditions d'arrêt.</Text>
+<Text>Tous les agents lisent et écrivent dans un espace d'état central partagé ; un contrôleur sélectionne l'agent compétent pour traiter les données « mûres ». C'est une mémoire partagée + contrôle opportuniste : l'ordre des étapes n'est pas connu à l'avance. Nuance décisive : partager un état ne garantit <HighLight accent="red" bold>ni consensus ni convergence</HighLight>. Il faut définir des règles de conflit, des versions et des conditions d'arrêt.</Text>
 
-<Text><strong class="text-text-primary">Message Bus.</strong> La communication est asynchrone, par publication/abonnement d'événements sur un bus (Kafka, RabbitMQ, NATS). Producteurs et consommateurs ne se connaissent pas. C'est une <HighLight accent="green">brique d'infrastructure mature</HighLight>, mais elle n'apporte pas automatiquement une coordination correcte : livraison, doublons, idempotence, ordre et reprise dépendent de la configuration. <strong class="text-text-secondary">Le couplage n'est pas supprimé, il est déplacé vers les contrats</strong> (schémas d'événements, sémantique des topics, garanties de livraison).</Text>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Message Bus</Title>
+</div>
+
+<Text>La communication est asynchrone, par publication/abonnement d'événements sur un bus (Kafka, RabbitMQ, NATS). Producteurs et consommateurs ne se connaissent pas. C'est une <HighLight accent="green">brique d'infrastructure mature</HighLight>, mais elle n'apporte pas automatiquement une coordination correcte : livraison, doublons, idempotence, ordre et reprise dépendent de la configuration. <strong class="text-text-secondary">Le couplage n'est pas supprimé, il est déplacé vers les contrats</strong> (schémas d'événements, sémantique des topics, garanties de livraison).</Text>
 
 ```mermaid
 sequenceDiagram
@@ -536,7 +572,10 @@ sequenceDiagram
 
 <SectionHeader sectionId="evaluator" label="05.1" />
 
-<Title size={3}>Evaluator-Optimizer</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Evaluator-Optimizer</Title>
+</div>
 
 <Text>Une étape <strong class="text-text-secondary">générateur</strong> produit un résultat ; une étape <strong class="text-text-secondary">évaluateur</strong> le juge selon une grille explicite. En cas d'échec, le générateur reçoit un feedback structuré et révise, jusqu'à validation ou épuisement d'un budget de révisions.</Text>
 
@@ -574,7 +613,10 @@ sequenceDiagram
 
 <SectionHeader sectionId="vote" label="05.2" />
 
-<Title size={3}>Consensus / Majority Voting</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Émergent" />
+  <Title size={3}>Consensus / Majority Voting</Title>
+</div>
 
 <Text>Plusieurs exécutions indépendantes de la même tâche ; un algorithme (vote majoritaire, pondéré, clustering sémantique) ou un agent juge retient la réponse la plus convergente. C'est l'héritier de la <em>self-consistency</em>. <strong class="text-accent-red">Limite à expliciter :</strong> trois agents peuvent reproduire la même erreur parce qu'ils partagent le même modèle ou le même biais. <HighLight accent="yellow" bold>Quatre avis ne constituent pas quatre preuves indépendantes.</HighLight></Text>
 
@@ -608,7 +650,10 @@ flowchart TD
 
 <SectionHeader sectionId="debat" label="05.3" />
 
-<Title size={3}>Multi-Agent Debate</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Exploratoire" />
+  <Title size={3}>Multi-Agent Debate</Title>
+</div>
 
 <Text>Deux ou plusieurs agents aux perspectives opposées débattent en plusieurs tours ; un modérateur tranche. L'hypothèse : l'échange contradictoire corrige les biais. <strong class="text-accent-red">Ce que la recherche montre réellement :</strong> le débat n'est <HighLight accent="red" bold>pas toujours supérieur</HighLight> au simple vote ni à l'auto-correction isolée. Effets parasites identifiés : <HighLight accent="yellow">conformisme sycophante</HighLight>, <HighLight accent="yellow">fragilité contextuelle</HighLight> et <HighLight accent="yellow">effondrement du consensus</HighLight>.</Text>
 
@@ -644,7 +689,10 @@ sequenceDiagram
 
 <SectionHeader sectionId="redteam" label="05.4" />
 
-<Title size={3}>Red Teaming</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Émergent" />
+  <Title size={3}>Red Teaming</Title>
+</div>
 
 <Text>Un agent <strong class="text-text-secondary">attaquant</strong> tente de faire échouer ou détourner le système cible : hallucination forcée, injection d'instructions, contournement de garde-fous. Un <strong class="text-text-secondary">juge</strong> mesure le succès de chaque tentative et alimente l'adaptation des attaques.</Text>
 
@@ -681,7 +729,10 @@ sequenceDiagram
 
 <SectionHeader sectionId="hitl" label="05.5" />
 
-<Title size={3}>Human-in-the-Loop</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Human-in-the-Loop</Title>
+</div>
 
 <Text>Un <strong class="text-text-secondary">point d'arrêt</strong> où le système sollicite un humain avant d'exécuter une action critique ou irréversible. Trois couches à ne pas confondre :</Text>
 
@@ -737,7 +788,10 @@ flowchart TD
 
 <SectionHeader sectionId="roles" label="06.1" />
 
-<Title size={3}>Role-based Task Decomposition</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Role-based Task Decomposition</Title>
+</div>
 
 <Text>Le problème est découpé en attribuant à chaque composant un <strong class="text-text-secondary">rôle métier distinct et contraint</strong> (nom, objectif, contraintes, ton). C'est le fondement de frameworks comme MetaGPT, ChatDev ou CAMEL.</Text>
 
@@ -769,7 +823,10 @@ flowchart LR
 
 <SectionHeader sectionId="tools" label="06.2" />
 
-<Title size={3}>Tool-scoped Agents</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Éprouvé" />
+  <Title size={3}>Tool-scoped Agents</Title>
+</div>
 
 <Text>Chaque agent a l'accès exclusif à un outil lourd ou sensible : un agent SQL, un agent web scraping, un agent exécution Python. C'est un principe utile d'isolation et de séparation des capacités. <strong class="text-accent-red">Mais attention à une formulation trompeuse :</strong> isoler un outil dans un agent <HighLight accent="red" bold>ne constitue pas, à lui seul, une frontière de sécurité suffisante</HighLight>. La sécurité doit être imposée par le système qui exécute les actions, pas par le prompt.</Text>
 
@@ -791,7 +848,10 @@ flowchart LR
 
 <SectionHeader sectionId="memoire" label="06.3" />
 
-<Title size={3}>Context & State Management</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Émergent" />
+  <Title size={3}>Context & State Management</Title>
+</div>
 
 <Text>La gestion du contexte peut reposer sur un agent <strong class="text-text-secondary">dédié</strong> qui maintient, nettoie, condense et indexe l'état partagé (idée inspirée de MemGPT). <strong class="text-accent-green">Mais un agent mémoire n'est pas une nécessité pour avoir une mémoire.</strong> Une couche applicative classique — historique, base SQL, résumé incrémental, RAG, checkpoints — est souvent plus fiable, moins coûteuse et plus facile à tester.</Text>
 
@@ -825,7 +885,10 @@ flowchart LR
 
 <SectionHeader sectionId="reduction" label="07.1" />
 
-<Title size={3}>Context Reduction & Evidence Retrieval</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Émergent" />
+  <Title size={3}>Context Reduction & Evidence Retrieval</Title>
+</div>
 
 <Text>Un système peu coûteux (petit modèle, ou mieux : <HighLight accent="green" bold>outils déterministes</HighLight>) reçoit un gros volume de données brutes et n'en transmet au grand modèle que l'essentiel. <strong class="text-accent-red">Le point critique n'est pas le nombre de tokens économisés, mais le risque que le prétraitement supprime précisément le détail qui permettrait de trouver la cause d'un incident.</strong></Text>
 
@@ -857,7 +920,10 @@ flowchart LR
 
 <SectionHeader sectionId="speculatif" label="07.2" />
 
-<Title size={3}>Exécution spéculative : deux mécanismes distincts</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Émergent" />
+  <Title size={3}>Exécution spéculative : deux mécanismes distincts</Title>
+</div>
 
 <Text>Le n°19 mélange deux sujets aux garanties et objectifs différents. Il reste une seule entrée du catalogue, mais désigne <HighLight accent="yellow" bold>deux techniques distinctes</HighLight>.</Text>
 
@@ -897,7 +963,10 @@ flowchart TD
 
 <SectionHeader sectionId="cascade" label="07.3" />
 
-<Title size={3}>Model Cascade / Escalation</Title>
+<div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
+  <MaturityBadge level="Émergent" />
+  <Title size={3}>Model Cascade / Escalation</Title>
+</div>
 
 <Text>Un modèle économique tente de répondre en premier. Si des signaux indiquent que sa réponse est insuffisante, la tâche peut être <HighLight accent="yellow" bold>escaladée</HighLight> au palier suivant (modèle intermédiaire, puis puissant, puis humain). C'est une application du routage basé sur l'incertitude — souvent plus économique que le vote, parce qu'il <strong class="text-text-secondary">sélectionne au lieu de toujours dépenser</strong>.</Text>
 

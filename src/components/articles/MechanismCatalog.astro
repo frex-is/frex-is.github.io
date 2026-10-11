@@ -1,11 +1,12 @@
 ---
-import { Icon } from 'astro-icon/components'
+import MaturityBadge from './MaturityBadge.astro'
 
 type Category = 'controle' | 'qualite' | 'capacite' | 'communication' | 'ressource'
 
 interface Mechanism {
   n: string
   name: string
+  id: string
   cat: Category
   axis: string
   change: string
@@ -13,26 +14,26 @@ interface Mechanism {
 }
 
 const mechanisms: Mechanism[] = [
-  { n: '01', name: 'Orchestrator-Worker', cat: 'controle', axis: 'Contrôle', change: 'Découpage dynamique délégué', maturity: 'Éprouvé' },
-  { n: '02', name: 'Sequential Chain', cat: 'controle', axis: 'Contrôle', change: 'Enchaînement linéaire des étapes', maturity: 'Éprouvé' },
-  { n: '03', name: 'Router', cat: 'controle', axis: 'Contrôle', change: "Sélection d'une route", maturity: 'Éprouvé' },
-  { n: '04', name: 'Parallel Branching', cat: 'controle', axis: 'Concurrence', change: 'Exécution simultanée', maturity: 'Éprouvé' },
-  { n: '05', name: 'Hierarchical Tree', cat: 'controle', axis: 'Décomposition', change: 'Niveaux de délégation', maturity: 'Émergent' },
-  { n: '06', name: 'Dynamic Task Allocation', cat: 'controle', axis: 'Décomposition', change: 'Allocation par offres', maturity: 'Exploratoire' },
-  { n: '07', name: 'Evaluator-Optimizer', cat: 'qualite', axis: 'Qualité', change: 'Boucle de révision', maturity: 'Éprouvé' },
-  { n: '08', name: 'Consensus / Voting', cat: 'qualite', axis: 'Qualité', change: 'Agrégation par vote', maturity: 'Émergent' },
-  { n: '09', name: 'Multi-Agent Debate', cat: 'qualite', axis: 'Qualité', change: 'Confrontation multi-tours', maturity: 'Exploratoire' },
-  { n: '10', name: 'Red Teaming', cat: 'qualite', axis: 'Gouvernance', change: 'Audit adversarial', maturity: 'Émergent' },
-  { n: '11', name: 'Human-in-the-Loop', cat: 'qualite', axis: 'Gouvernance', change: 'Approbation humaine', maturity: 'Éprouvé' },
-  { n: '12', name: 'Role-based Decomposition', cat: 'capacite', axis: 'Organisation', change: 'Focalisation des responsabilités', maturity: 'Éprouvé' },
-  { n: '13', name: 'Tool-scoped Agents', cat: 'capacite', axis: 'Capacités', change: "Restriction d'accès aux outils", maturity: 'Éprouvé' },
-  { n: '14', name: 'Context & State Management', cat: 'capacite', axis: 'Contexte', change: 'Persistance et condensation', maturity: 'Émergent' },
-  { n: '15', name: 'Peer-to-Peer', cat: 'communication', axis: 'Communication', change: 'Coordination décentralisée', maturity: 'Exploratoire' },
-  { n: '16', name: 'Blackboard', cat: 'communication', axis: 'Communication', change: 'État partagé opportuniste', maturity: 'Exploratoire' },
-  { n: '17', name: 'Message Bus', cat: 'communication', axis: 'Communication', change: 'Découplage par événements', maturity: 'Éprouvé' },
-  { n: '18', name: 'Context Reduction', cat: 'ressource', axis: 'Ressources', change: 'Pré-filtrage avant le grand modèle', maturity: 'Émergent' },
-  { n: '19', name: 'Speculative / Draft-and-Verify', cat: 'ressource', axis: 'Ressources', change: 'Accélération et vérification', maturity: 'Émergent' },
-  { n: '20', name: 'Model Cascade / Escalation', cat: 'ressource', axis: 'Ressources', change: 'Escalade sélective', maturity: 'Émergent' },
+  { n: '01', name: 'Orchestrator-Worker', id: 'orchestrator', cat: 'controle', axis: 'Contrôle', change: 'Découpage dynamique délégué', maturity: 'Éprouvé' },
+  { n: '02', name: 'Sequential Chain', id: 'chain', cat: 'controle', axis: 'Contrôle', change: 'Enchaînement linéaire des étapes', maturity: 'Éprouvé' },
+  { n: '03', name: 'Router', id: 'router', cat: 'controle', axis: 'Contrôle', change: "Sélection d'une route", maturity: 'Éprouvé' },
+  { n: '04', name: 'Parallel Branching', id: 'parallel', cat: 'controle', axis: 'Concurrence', change: 'Exécution simultanée', maturity: 'Éprouvé' },
+  { n: '05', name: 'Hierarchical Tree', id: 'hierarchie', cat: 'controle', axis: 'Décomposition', change: 'Niveaux de délégation', maturity: 'Émergent' },
+  { n: '06', name: 'Dynamic Task Allocation', id: 'communication', cat: 'controle', axis: 'Décomposition', change: 'Allocation par offres', maturity: 'Exploratoire' },
+  { n: '07', name: 'Evaluator-Optimizer', id: 'evaluator', cat: 'qualite', axis: 'Qualité', change: 'Boucle de révision', maturity: 'Éprouvé' },
+  { n: '08', name: 'Consensus / Voting', id: 'vote', cat: 'qualite', axis: 'Qualité', change: 'Agrégation par vote', maturity: 'Émergent' },
+  { n: '09', name: 'Multi-Agent Debate', id: 'debat', cat: 'qualite', axis: 'Qualité', change: 'Confrontation multi-tours', maturity: 'Exploratoire' },
+  { n: '10', name: 'Red Teaming', id: 'redteam', cat: 'qualite', axis: 'Gouvernance', change: 'Audit adversarial', maturity: 'Émergent' },
+  { n: '11', name: 'Human-in-the-Loop', id: 'hitl', cat: 'qualite', axis: 'Gouvernance', change: 'Approbation humaine', maturity: 'Éprouvé' },
+  { n: '12', name: 'Role-based Decomposition', id: 'roles', cat: 'capacite', axis: 'Organisation', change: 'Focalisation des responsabilités', maturity: 'Éprouvé' },
+  { n: '13', name: 'Tool-scoped Agents', id: 'tools', cat: 'capacite', axis: 'Capacités', change: "Restriction d'accès aux outils", maturity: 'Éprouvé' },
+  { n: '14', name: 'Context & State Management', id: 'memoire', cat: 'capacite', axis: 'Contexte', change: 'Persistance et condensation', maturity: 'Émergent' },
+  { n: '15', name: 'Peer-to-Peer', id: 'communication', cat: 'communication', axis: 'Communication', change: 'Coordination décentralisée', maturity: 'Exploratoire' },
+  { n: '16', name: 'Blackboard', id: 'communication', cat: 'communication', axis: 'Communication', change: 'État partagé opportuniste', maturity: 'Exploratoire' },
+  { n: '17', name: 'Message Bus', id: 'communication', cat: 'communication', axis: 'Communication', change: 'Découplage par événements', maturity: 'Éprouvé' },
+  { n: '18', name: 'Context Reduction', id: 'reduction', cat: 'ressource', axis: 'Ressources', change: 'Pré-filtrage avant le grand modèle', maturity: 'Émergent' },
+  { n: '19', name: 'Speculative / Draft-and-Verify', id: 'speculatif', cat: 'ressource', axis: 'Ressources', change: 'Accélération et vérification', maturity: 'Émergent' },
+  { n: '20', name: 'Model Cascade / Escalation', id: 'cascade', cat: 'ressource', axis: 'Ressources', change: 'Escalade sélective', maturity: 'Émergent' },
 ]
 
 const categoryLabel: Record<Category, string> = {
@@ -51,12 +52,6 @@ const categoryClass: Record<Category, { stripe: string; text: string }> = {
   ressource: { stripe: 'bg-accent-yellow', text: 'text-accent-yellow' },
 }
 
-const maturityClass: Record<Mechanism['maturity'], string> = {
-  'Éprouvé': 'border-accent-green/20 text-accent-green',
-  'Émergent': 'border-accent-yellow/20 text-accent-yellow',
-  'Exploratoire': 'border-accent-red/20 text-accent-red',
-}
-
 const legend = (Object.keys(categoryLabel) as Category[]).map((c) => ({
   label: categoryLabel[c],
   cls: categoryClass[c],
@@ -72,11 +67,11 @@ const legend = (Object.keys(categoryLabel) as Category[]).map((c) => ({
   ))}
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3 my-4">
   {mechanisms.map((m) => {
     const c = categoryClass[m.cat]
     return (
-      <div class="relative overflow-hidden rounded-block border border-border bg-surface-card p-4 transition-colors hover:bg-surface-hover">
+      <a href={`#${m.id}`} class="relative block overflow-hidden rounded-block border border-border bg-surface-card p-4 transition-colors hover:bg-surface-hover hover:border-border-hover">
         <div class:list={['absolute top-0 left-0 bottom-0 w-[3px] opacity-70', c.stripe]} />
         <div class="flex items-start gap-3 pl-1">
           <span class:list={['font-mono text-[13px] font-bold shrink-0 mt-0.5', c.text]}>{m.n}</span>
@@ -86,13 +81,12 @@ const legend = (Object.keys(categoryLabel) as Category[]).map((c) => ({
               <span class="text-[10px] font-medium px-2 py-0.5 rounded-pill border border-border text-text-subtle">{m.axis}</span>
             </div>
             <p class="text-[13px] text-text-muted leading-[1.6] mt-1">{m.change}</p>
-            <span class:list={['inline-flex items-center gap-1 mt-2 text-[10px] font-semibold px-2 py-0.5 rounded-pill border', maturityClass[m.maturity]]}>
-              <Icon name="lucide:activity" class="size-[10px]" />
-              {m.maturity}
+            <span class="inline-block mt-2">
+              <MaturityBadge level={m.maturity} size="sm" />
             </span>
           </div>
         </div>
-      </div>
+      </a>
     )
   })}
 </div>
