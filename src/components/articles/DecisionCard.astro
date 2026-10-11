@@ -1,0 +1,43 @@
+---
+import { Icon } from 'astro-icon/components'
+
+export interface FicheItem {
+  label: string
+  value: string
+}
+
+export interface Props {
+  title?: string
+  accent?: 'cyan' | 'green' | 'red' | 'yellow' | 'purple' | 'pink'
+  icon?: string
+  items: FicheItem[]
+}
+
+const { title = 'Fiche décision', accent = 'cyan', icon = 'lucide:clipboard-list', items } = Astro.props
+
+const styles: Record<string, { head: string; text: string }> = {
+  cyan: { head: 'bg-accent-cyan/8 border-accent-cyan/20', text: 'text-accent-cyan' },
+  green: { head: 'bg-accent-green/8 border-accent-green/20', text: 'text-accent-green' },
+  red: { head: 'bg-accent-red/8 border-accent-red/20', text: 'text-accent-red' },
+  yellow: { head: 'bg-accent-yellow/8 border-accent-yellow/20', text: 'text-accent-yellow' },
+  purple: { head: 'bg-accent-purple/8 border-accent-purple/20', text: 'text-accent-purple' },
+  pink: { head: 'bg-accent-pink/8 border-accent-pink/20', text: 'text-accent-pink' },
+}
+
+const s = styles[accent]
+---
+
+<div class="my-6 rounded-block border border-border bg-surface-card overflow-hidden">
+  <div class:list={['flex items-center gap-2.5 px-4 py-2.5 border-b', s.head]}>
+    <Icon name={icon} class:list={['size-[15px]', s.text]} />
+    <span class:list={['text-[12px] font-semibold uppercase tracking-wider', s.text]}>{title}</span>
+  </div>
+  <dl>
+    {items.map((item, i) => (
+      <div class:list={['grid grid-cols-1 sm:grid-cols-[190px_1fr] gap-1 sm:gap-4 px-4 py-3', i > 0 && 'border-t border-border-subtle']}>
+        <dt class="text-[13px] font-semibold text-text-secondary leading-[1.6]">{item.label}</dt>
+        <dd class="text-[14px] text-text-muted leading-[1.7] [&_strong]:text-text-secondary">{item.value}</dd>
+      </div>
+    ))}
+  </dl>
+</div>

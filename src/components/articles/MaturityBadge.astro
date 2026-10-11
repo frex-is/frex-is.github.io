@@ -1,0 +1,67 @@
+---
+import { Icon } from 'astro-icon/components'
+
+export type MaturityLevel = 'Éprouvé' | 'Émergent' | 'Exploratoire'
+
+export interface Props {
+  level: MaturityLevel
+  size?: 'sm' | 'md'
+}
+
+const { level, size = 'md' } = Astro.props
+
+type LevelConfig = {
+  color: string
+  bg: string
+  border: string
+  icon: string
+  hint: string
+}
+
+const levels: Record<MaturityLevel, LevelConfig> = {
+  Éprouvé: {
+    color: 'text-accent-green',
+    bg: 'bg-accent-green/8',
+    border: 'border-accent-green/25',
+    icon: 'lucide:badge-check',
+    hint: 'Mécanisme éprouvé en production',
+  },
+  Émergent: {
+    color: 'text-accent-yellow',
+    bg: 'bg-accent-yellow/8',
+    border: 'border-accent-yellow/25',
+    icon: 'lucide:activity',
+    hint: 'Prometteur, encore peu standardisé',
+  },
+  Exploratoire: {
+    color: 'text-accent-red',
+    bg: 'bg-accent-red/8',
+    border: 'border-accent-red/25',
+    icon: 'lucide:flask-conical',
+    hint: 'Recherche active, preuves limitées',
+  },
+}
+
+const c = levels[level]
+
+const sizeClasses =
+  size === 'sm'
+    ? 'text-[10px] px-2 py-0.5 gap-1'
+    : 'text-[11px] px-3 py-1 gap-1.5'
+
+const iconSize = size === 'sm' ? 'size-[11px]' : 'size-[13px]'
+---
+
+<span
+  class:list={[
+    'inline-flex select-none items-center rounded-pill border font-medium align-middle',
+    sizeClasses,
+    c.color,
+    c.bg,
+    c.border,
+  ]}
+  title={c.hint}
+>
+  <Icon name={c.icon} class:list={[iconSize]} />
+  {level}
+</span>
