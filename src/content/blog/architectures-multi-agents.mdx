@@ -304,7 +304,7 @@ import AxisGrid from '@components/articles/AxisGrid.astro'
 
 <Text>Ces mécanismes répondent à : <HighLight accent="cyan" bold>qui pilote qui, et comment les agents se parlent</HighLight>.</Text>
 
-<SectionHeader sectionId="orchestrator" label="01" />
+<SectionHeader sectionId="orchestrator" label="04.1" />
 
 <Title size={3}>Orchestrator-Worker</Title>
 
@@ -347,7 +347,7 @@ sequenceDiagram
   { label: "Comment l'évaluer", value: 'Comparer à une baseline mono-agent sur le même jeu ; mesurer le gain par sous-tâche, pas seulement sur la sortie finale.' },
 ]} />
 
-<SectionHeader sectionId="chain" label="02" />
+<SectionHeader sectionId="chain" label="04.2" />
 
 <Title size={3}>Sequential Chain</Title>
 
@@ -382,7 +382,7 @@ sequenceDiagram
   { label: "Comment l'évaluer", value: "Mesurer la qualité par étape et l'impact d'une erreur amont sur la sortie finale." },
 ]} />
 
-<SectionHeader sectionId="router" label="03" />
+<SectionHeader sectionId="router" label="04.3" />
 
 <Title size={3}>Router</Title>
 
@@ -415,7 +415,7 @@ flowchart TD
   { label: "Comment l'évaluer", value: 'Matrice de confusion du routeur, précision par route, taux de repli, coût moyen par requête.' },
 ]} />
 
-<SectionHeader sectionId="parallel" label="04" />
+<SectionHeader sectionId="parallel" label="04.4" />
 
 <Title size={3}>Parallel Branching (Fan-Out / Fan-In)</Title>
 
@@ -445,7 +445,7 @@ flowchart TD
   { label: "Comment l'évaluer", value: "Qualité de l'agrégation, taux de contradictions détectées, gain de latence vs séquentiel." },
 ]} />
 
-<SectionHeader sectionId="hierarchie" label="05" />
+<SectionHeader sectionId="hierarchie" label="04.5" />
 
 <Title size={3}>Hierarchical Tree</Title>
 
@@ -481,7 +481,7 @@ flowchart TD
   { label: "Comment l'évaluer", value: "Comparer au superviseur unique à budget égal ; mesurer la fidélité de l'information remontée." },
 ]} />
 
-<SectionHeader sectionId="communication" label="06" />
+<SectionHeader sectionId="communication" label="04.6" />
 
 <Title size={3}>Communication : allocation, P2P, blackboard & bus</Title>
 
@@ -496,11 +496,11 @@ flowchart LR
     N3 <-->|"partage de contexte"| N1
 ```
 
-<Text><strong class="text-text-primary">15. Peer-to-Peer.</strong> Aucun orchestrateur : les agents communiquent directement et décident à qui transférer le contexte. La coordination est <HighLight accent="purple">émergente</HighLight>. Usage type : négociation acheteur/vendeur. Bénéfice annoncé : pas de point unique de défaillance <em>côté agents</em>. Nuance : supprimer le superviseur ne supprime pas les points uniques de l'<strong class="text-text-secondary">infrastructure</strong>. <strong class="text-accent-red">Aucune garantie de convergence.</strong></Text>
+<Text><strong class="text-text-primary">Peer-to-Peer.</strong> Aucun orchestrateur : les agents communiquent directement et décident à qui transférer le contexte. La coordination est <HighLight accent="purple">émergente</HighLight>. Usage type : négociation acheteur/vendeur. Bénéfice annoncé : pas de point unique de défaillance <em>côté agents</em>. Nuance : supprimer le superviseur ne supprime pas les points uniques de l'<strong class="text-text-secondary">infrastructure</strong>. <strong class="text-accent-red">Aucune garantie de convergence.</strong></Text>
 
-<Text><strong class="text-text-primary">16. Blackboard.</strong> Tous les agents lisent et écrivent dans un espace d'état central partagé ; un contrôleur sélectionne l'agent compétent pour traiter les données « mûres ». C'est une mémoire partagée + contrôle opportuniste : l'ordre des étapes n'est pas connu à l'avance. Nuance décisive : partager un état ne garantit <HighLight accent="red" bold>ni consensus ni convergence</HighLight>. Il faut définir des règles de conflit, des versions et des conditions d'arrêt.</Text>
+<Text><strong class="text-text-primary">Blackboard.</strong> Tous les agents lisent et écrivent dans un espace d'état central partagé ; un contrôleur sélectionne l'agent compétent pour traiter les données « mûres ». C'est une mémoire partagée + contrôle opportuniste : l'ordre des étapes n'est pas connu à l'avance. Nuance décisive : partager un état ne garantit <HighLight accent="red" bold>ni consensus ni convergence</HighLight>. Il faut définir des règles de conflit, des versions et des conditions d'arrêt.</Text>
 
-<Text><strong class="text-text-primary">17. Message Bus.</strong> La communication est asynchrone, par publication/abonnement d'événements sur un bus (Kafka, RabbitMQ, NATS). Producteurs et consommateurs ne se connaissent pas. C'est une <HighLight accent="green">brique d'infrastructure mature</HighLight>, mais elle n'apporte pas automatiquement une coordination correcte : livraison, doublons, idempotence, ordre et reprise dépendent de la configuration. <strong class="text-text-secondary">Le couplage n'est pas supprimé, il est déplacé vers les contrats</strong> (schémas d'événements, sémantique des topics, garanties de livraison).</Text>
+<Text><strong class="text-text-primary">Message Bus.</strong> La communication est asynchrone, par publication/abonnement d'événements sur un bus (Kafka, RabbitMQ, NATS). Producteurs et consommateurs ne se connaissent pas. C'est une <HighLight accent="green">brique d'infrastructure mature</HighLight>, mais elle n'apporte pas automatiquement une coordination correcte : livraison, doublons, idempotence, ordre et reprise dépendent de la configuration. <strong class="text-text-secondary">Le couplage n'est pas supprimé, il est déplacé vers les contrats</strong> (schémas d'événements, sémantique des topics, garanties de livraison).</Text>
 
 ```mermaid
 sequenceDiagram
@@ -534,7 +534,7 @@ sequenceDiagram
 
 <Text>Ces mécanismes répondent à : <HighLight accent="green" bold>comment fiabiliser une sortie et la gouverner</HighLight>. Point transversal : <HighLight accent="yellow" bold>la redondance des agents ne doit pas être confondue avec l'indépendance des preuves</HighLight>.</Text>
 
-<SectionHeader sectionId="evaluator" label="07" />
+<SectionHeader sectionId="evaluator" label="05.1" />
 
 <Title size={3}>Evaluator-Optimizer</Title>
 
@@ -572,7 +572,7 @@ sequenceDiagram
   { label: "Comment l'évaluer", value: 'Delta de qualité avant/après, nombre d\'itérations moyen, taux de faux positifs de l\'évaluateur, coût par livrable validé.' },
 ]} />
 
-<SectionHeader sectionId="vote" label="08" />
+<SectionHeader sectionId="vote" label="05.2" />
 
 <Title size={3}>Consensus / Majority Voting</Title>
 
@@ -606,7 +606,7 @@ flowchart TD
   { label: "Comment l'évaluer", value: "Taux d'erreur restant vs agent unique ; corrélation des erreurs entre agents ; conditions de gain." },
 ]} />
 
-<SectionHeader sectionId="debat" label="09" />
+<SectionHeader sectionId="debat" label="05.3" />
 
 <Title size={3}>Multi-Agent Debate</Title>
 
@@ -642,7 +642,7 @@ sequenceDiagram
   { label: "Comment l'évaluer", value: 'Comparer à agent unique / vote / vérification externe, à budget égal et sur le même jeu.' },
 ]} />
 
-<SectionHeader sectionId="redteam" label="10" />
+<SectionHeader sectionId="redteam" label="05.4" />
 
 <Title size={3}>Red Teaming</Title>
 
@@ -679,7 +679,7 @@ sequenceDiagram
   { label: "Comment l'évaluer", value: 'Taux de vulnérabilités découvertes, taux de faux positifs, reproductibilité des attaques.' },
 ]} />
 
-<SectionHeader sectionId="hitl" label="11" />
+<SectionHeader sectionId="hitl" label="05.5" />
 
 <Title size={3}>Human-in-the-Loop</Title>
 
@@ -735,7 +735,7 @@ flowchart TD
 
 <Text>Ces mécanismes répondent à : <HighLight accent="purple" bold>comment restreindre les accès, organiser et mémoriser</HighLight>.</Text>
 
-<SectionHeader sectionId="roles" label="12" />
+<SectionHeader sectionId="roles" label="06.1" />
 
 <Title size={3}>Role-based Task Decomposition</Title>
 
@@ -767,7 +767,7 @@ flowchart LR
   { label: "Comment l'évaluer", value: 'Comparer à un agent unique : mesurer si chaque rôle apporte un gain réel.' },
 ]} />
 
-<SectionHeader sectionId="tools" label="13" />
+<SectionHeader sectionId="tools" label="06.2" />
 
 <Title size={3}>Tool-scoped Agents</Title>
 
@@ -789,7 +789,7 @@ flowchart LR
   { label: "Comment l'évaluer", value: "Tests d'accès (actions non autorisées), taux d'erreurs d'outil, isolation effective." },
 ]} />
 
-<SectionHeader sectionId="memoire" label="14" />
+<SectionHeader sectionId="memoire" label="06.3" />
 
 <Title size={3}>Context & State Management</Title>
 
@@ -823,7 +823,7 @@ flowchart LR
 
 <Text>Ces mécanismes répondent à : <HighLight accent="yellow" bold>comment économiser du calcul et de l'argent</HighLight>.</Text>
 
-<SectionHeader sectionId="reduction" label="18" />
+<SectionHeader sectionId="reduction" label="07.1" />
 
 <Title size={3}>Context Reduction & Evidence Retrieval</Title>
 
@@ -855,7 +855,7 @@ flowchart LR
   { label: "Comment l'évaluer", value: 'Taux de rappel des informations critiques : le détail utile survit-il à la réduction ?' },
 ]} />
 
-<SectionHeader sectionId="speculatif" label="19" />
+<SectionHeader sectionId="speculatif" label="07.2" />
 
 <Title size={3}>Exécution spéculative : deux mécanismes distincts</Title>
 
@@ -895,7 +895,7 @@ flowchart TD
   { label: "Comment l'évaluer", value: "19.1 : taux d'acceptation, vitesse à distribution équivalente. 19.2 : coût total et latence de bout en bout vs génération unique." },
 ]} />
 
-<SectionHeader sectionId="cascade" label="20" />
+<SectionHeader sectionId="cascade" label="07.3" />
 
 <Title size={3}>Model Cascade / Escalation</Title>
 
