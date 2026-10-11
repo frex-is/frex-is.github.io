@@ -6,9 +6,10 @@ export type NoteVariant = 'note' | 'info' | 'success' | 'warning' | 'danger'
 export interface Props {
   variant?: NoteVariant
   title?: string
+  class?: string
 }
 
-const { variant = 'note', title } = Astro.props
+const { variant = 'note', title, class: className } = Astro.props
 
 const variantData: Record<NoteVariant, { accent: string; icon: string }> = {
   note:    { accent: 'cyan',   icon: 'lucide:file-text' },
@@ -23,7 +24,7 @@ const { accent, icon } = variantData[variant]
 
 <div
   class="flex gap-3 rounded-block border p-4 mx-4 mb-6"
-  class:list={[`bg-accent-${accent}/8 border-accent-${accent}/20`]}
+  class:list={[`bg-accent-${accent}/8 border-accent-${accent}/20`, className]}
 >
   <div class={`mt-0.5 shrink-0 text-accent-${accent}`}>
     <Icon name={icon} class="size-[18px]" />
