@@ -1,0 +1,1115 @@
+---
+title: "Architectures multi-agents : composer des briques, pas choisir un pattern"
+description: "Vocabulaire, axes de conception, catalogue de 20 mécanismes et méthode de décision : comment concevoir, évaluer et exploiter un système LLM multi-agents — et surtout, quand s'en passer."
+date: "2026-10-11"
+readingTime: "40"
+tags:
+- Agents IA
+- Multi-Agents
+- Architecture
+- Orchestration
+- LLM
+tableOfContent:
+- id: "intro"
+  label: "Introduction"
+
+- id: "vocabulaire"
+  label: "1. Vocabulaire"
+  children:
+    - id: "agent-appel"
+      label: "Agent vs appel LLM"
+    - id: "continuum"
+      label: "Workflows & agents"
+    - id: "regle-or"
+      label: "La règle d'or"
+
+- id: "axes"
+  label: "2. Axes de conception"
+
+- id: "catalogue"
+  label: "3. Le catalogue"
+  children:
+    - id: "contrat"
+      label: "Le contrat d'une tâche"
+    - id: "code-modele"
+      label: "Code vs modèle"
+
+- id: "controle"
+  label: "4. Contrôle & coordination"
+  children:
+    - id: "orchestrator"
+      label: "Orchestrator-Worker"
+    - id: "chain"
+      label: "Sequential Chain"
+    - id: "router"
+      label: "Router"
+    - id: "parallel"
+      label: "Parallel Branching"
+    - id: "hierarchie"
+      label: "Hierarchical Tree"
+    - id: "communication"
+      label: "Communication"
+
+- id: "qualite"
+  label: "5. Qualité & vérification"
+  children:
+    - id: "evaluator"
+      label: "Evaluator-Optimizer"
+    - id: "vote"
+      label: "Consensus / Voting"
+    - id: "debat"
+      label: "Multi-Agent Debate"
+    - id: "redteam"
+      label: "Red Teaming"
+    - id: "hitl"
+      label: "Human-in-the-Loop"
+
+- id: "capacites"
+  label: "6. Capacités & contexte"
+  children:
+    - id: "roles"
+      label: "Décomposition par rôles"
+    - id: "tools"
+      label: "Tool-scoped Agents"
+    - id: "memoire"
+      label: "Contexte & état"
+
+- id: "ressources"
+  label: "7. Ressources"
+  children:
+    - id: "reduction"
+      label: "Réduction de contexte"
+    - id: "speculatif"
+      label: "Exécution spéculative"
+    - id: "cascade"
+      label: "Cascade de modèles"
+
+- id: "production"
+  label: "8. Production & confiance"
+
+- id: "evaluation"
+  label: "9. Évaluer & décider"
+
+- id: "synthese"
+  label: "10. Synthèse"
+
+- id: "conclusion"
+  label: "Conclusion"
+---
+import SectionHeader from '@components/blog/SectionHeader.astro'
+import Text from '@components/base/text.astro'
+import TagList from '@components/base/TagList.astro'
+import SectionTitle from '@components/blog/SectionTitle.astro'
+import HighLight from '@components/base/Highlight.astro'
+import Note from '@components/base/Note.astro'
+import { Icon } from 'astro-icon/components'
+import Title from '@components/base/Title.astro'
+import Link from '@components/base/Link.astro'
+import Table from '@components/base/Table.astro'
+import DecisionCard from '@components/articles/DecisionCard.astro'
+import MechanismCatalog from '@components/articles/MechanismCatalog.astro'
+import AxisGrid from '@components/articles/AxisGrid.astro'
+
+
+<SectionHeader sectionId="intro" label="intro" />
+
+<Text>Quand on découvre les systèmes multi-agents, il y a une erreur de lecture très répandue : imaginer un catalogue de patterns parmi lesquels il faudrait <HighLight accent="yellow" bold>choisir</HighLight>. Comme si l'on devait opter pour « le » pattern adapté à son problème, à la manière d'un design pattern classique.</Text>
+
+<Text>La réalité est différente. Les mécanismes que nous allons parcourir ne sont pas vingt architectures mutuellement exclusives : ce sont des <HighLight accent="cyan" bold>briques composables</HighLight>. Un même système réel en combine souvent trois ou quatre, à des niveaux différents. Un routeur, un orchestrateur et une boucle de vérification peuvent parfaitement cohabiter — cela ne fait pas « trois architectures », mais <HighLight accent="cyan" bold>une</HighLight> architecture assemblée à partir de trois mécanismes.</Text>
+
+<Text>Cet article propose une grille de lecture pour <HighLight accent="green" bold>concevoir</HighLight>, <HighLight accent="green" bold>évaluer</HighLight> et <HighLight accent="green" bold>exploiter</HighLight> un système LLM multi-agents. Et, tout aussi important, pour savoir <HighLight accent="red" bold>quand ne pas en construire</HighLight>.</Text>
+
+<TagList tags={[
+  { label: 'Agents IA' },
+  { label: 'Multi-Agents', variant: 'green' },
+  { label: 'Architecture', variant: 'purple' },
+  { label: 'Orchestration', variant: 'red' },
+]} />
+
+<Note title="La règle d'or" variant="info">
+  <HighLight accent="green" bold>Commencez simple.</HighLight> Un seul LLM bien prompté — éventuellement avec de la recherche documentaire — résout la majorité des cas. Ajoutez des agents, de la coordination ou des boucles uniquement si un <HighLight accent="yellow" bold>besoin mesurable</HighLight> le justifie. Tout système multi-agents échange de la latence, du coût et de la complexité opérationnelle contre un gain de performance qu'il faut <HighLight accent="yellow" bold>démontrer</HighLight>.
+</Note>
+
+<SectionHeader sectionId="vocabulaire" label="01" />
+
+<SectionTitle>Vocabulaire : <HighLight accent="purple">de quoi parle-t-on vraiment ?</HighLight></SectionTitle>
+
+<Text>Le mot « agent » est employé à tort et à travers. Avant de discuter d'architectures, il faut fixer un vocabulaire. Les conventions ci-dessous ne sont pas universelles, mais elles rendent les discussions nettement plus précises.</Text>
+
+<Table
+  headers={[{ label: 'Terme' }, { label: 'Définition retenue' }]}
+  rows={[
+    ['Appel LLM', 'Une inférence unique : un prompt entre, une sortie sort. Aucun état, aucune boucle.'],
+    ['Rôle', 'Les responsabilités et consignes attribuées à un composant (persona, instructions, contraintes). Un rôle est une technique de prompt, pas une unité d\'exécution autonome.'],
+    ['Agent', 'Une unité d\'exécution capable de poursuivre un objectif au moyen d\'un modèle, d\'outils et d\'une boucle de contrôle. Il peut disposer d\'un état, d\'une mémoire, de permissions et décider de ses prochaines actions.'],
+    ['Workflow', 'Le mécanisme qui définit comment les étapes s\'enchaînent (souvent en code déterministe).'],
+    ['Système multi-agents', 'Un système où plusieurs unités agentiques collaborent ou se coordonnent.'],
+  ]}
+/>
+
+<SectionHeader sectionId="agent-appel" label="01.1" />
+
+<Title size={3}>Agent vs appel LLM</Title>
+
+<Text>Un <HighLight accent="cyan" bold>agent</HighLight> n'est pas un appel à un modèle avec un prompt différent. Ce qui le distingue :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    un <strong class="text-text-secondary">état</strong> qui persiste entre les étapes ;
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    une <strong class="text-text-secondary">boucle d'exécution</strong> (observer → décider → agir) ;
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    des <strong class="text-text-secondary">outils</strong> et des <strong class="text-text-secondary">permissions</strong> ;
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    une <strong class="text-text-secondary">mémoire</strong> éventuelle ;
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    la capacité de <strong class="text-text-secondary">décider de ses prochaines actions</strong>.
+  </li>
+</ul>
+
+<Note title="Conséquence directe">
+  Appeler quatre fois le même modèle avec quatre prompts différents ne crée pas nécessairement quatre agents autonomes au sens architectural. Plusieurs mécanismes de cet article (vote, débat, personas, évaluateur) sont souvent présentés comme « multi-agents » alors qu'ils reposent sur de simples appels LLM différenciés. Cette distinction n'est pas cosmétique : elle change la robustesse, le coût et la testabilité du système.
+</Note>
+
+<SectionHeader sectionId="continuum" label="01.2" />
+
+<Title size={3}>Workflows et agents : un continuum</Title>
+
+<Text>La distinction popularisée par <Link href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic</Link> est un bon point de départ :</Text>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+  <div class="rounded-card border border-border bg-surface-card p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <Icon name="lucide:workflow" class="size-[18px] text-accent-cyan" />
+      <span class="text-[15px] font-semibold text-text-primary">Workflows</span>
+    </div>
+    <p class="text-[13px] text-text-muted leading-[1.6]">Le LLM est orchestré par des chemins de code prédéfinis (enchaînement, routage, parallélisation). <strong class="text-accent-green">Prévisibles</strong>, <strong class="text-accent-green">économiques</strong>, adaptés aux tâches bien définies.</p>
+  </div>
+  <div class="rounded-card border border-border bg-surface-card p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <Icon name="lucide:bot" class="size-[18px] text-accent-purple" />
+      <span class="text-[15px] font-semibold text-text-primary">Agents</span>
+    </div>
+    <p class="text-[13px] text-text-muted leading-[1.6]">Le LLM décide lui-même de ses étapes et de l'usage de ses outils. <strong class="text-accent-yellow">Flexibles</strong>, mais <strong class="text-accent-red">coûteux</strong> en tokens et en latence.</p>
+  </div>
+</div>
+
+<Text>Mais cette opposition est trop souvent présentée comme un choix binaire. En pratique :</Text>
+
+<ul class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    on peut avoir un <strong class="text-text-secondary">workflow déterministe dont certaines étapes</strong> font appel à un agent autonome ;
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    on peut laisser un <strong class="text-text-secondary">superviseur choisir dynamiquement</strong> parmi des branches préconstruites, sans lui permettre de modifier librement tout le système ;
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-purple"></span>
+    la même application peut être « workflow » pour 90 % du trafic et « agent » pour les 10 % de cas complexes.
+  </li>
+</ul>
+
+<Note title="La vraie question de conception" variant="info">
+  La bonne question n'est pas « workflow <em>ou</em> agent ? », mais : <HighLight accent="green" bold>quelles décisions confions-nous au modèle, et lesquelles gardons-nous dans du code déterministe ?</HighLight> C'est l'axe de conception le plus utile de tout cet article.
+</Note>
+
+<SectionHeader sectionId="regle-or" label="01.3" />
+
+<Title size={3}>La règle d'or</Title>
+
+<Text>Un seul LLM bien prompté (+ retrieval) couvre la majorité des besoins. On ajoute de la coordination uniquement si un besoin mesurable le justifie — et l'on compare toujours à une <HighLight accent="cyan" bold>baseline mono-agent</HighLight> qui répond aux mêmes exigences fonctionnelles, de sécurité et de service.</Text>
+
+<SectionHeader sectionId="axes" label="02" />
+
+<SectionTitle>Les <HighLight accent="cyan">axes de conception</HighLight></SectionTitle>
+
+<Text>Plutôt que de choisir « un pattern », on conçoit un système en positionnant chaque mécanisme sur des axes <HighLight accent="cyan" bold>distincts mais interdépendants</HighLight>. Un système se décrit par un <HighLight accent="cyan" bold>vecteur</HighLight> sur ces axes, pas par un nom unique.</Text>
+
+<AxisGrid />
+
+<Note title="Pourquoi « interdépendants » ?" variant="warning">
+  Les axes restent utiles pour structurer la conception, mais ils ne sont pas orthogonaux : un routeur peut mettre en œuvre une cascade de modèles (ressources), un orchestrateur peut décider de paralléliser (décomposition), une restriction d'accès peut être déclenchée par le routage (capacités/sécurité). C'est une <strong class="text-text-secondary">grille de lecture</strong>, pas un espace mathématique.
+</Note>
+
+<Text>Trois mécanismes agissent souvent au même niveau et il faut éviter de les confondre : <HighLight accent="yellow">qui décide</HighLight> (le contrôle), <HighLight accent="green">comment on découpe</HighLight> (la décomposition), et <HighLight accent="pink">comment les composants se parlent et partagent un état</HighLight> (la communication). Un orchestrateur qui délègue en parallèle mobilise les trois à la fois.</Text>
+
+<SectionHeader sectionId="catalogue" label="03" />
+
+<SectionTitle>Le catalogue des <HighLight accent="purple">20 entrées</HighLight></SectionTitle>
+
+<Text>Voici les vingt entrées du catalogue, regroupées par fonction. Attention : il s'agit d'un <HighLight accent="yellow" bold>point d'entrée</HighLight> vers le reste de l'article, <HighLight accent="red" bold>pas d'une règle de décision</HighLight>. Le n°19 regroupe en réalité deux techniques distinctes (speculative decoding et draft-and-verify), comme nous le verrons.</Text>
+
+<MechanismCatalog />
+
+<Note title="Comment lire les statuts de maturité" variant="warning">
+  La colonne de maturité est une <strong class="text-text-secondary">synthèse éditoriale volontairement grossière</strong>, à dire d'expert. Elle agrège quatre dimensions qu'un projet réel doit évaluer séparément : maturité technique, adoption, niveau de preuve et généralisation. Et rappelons-le : <HighLight accent="red" bold>l'adoption n'est pas la qualité</HighLight>. Qu'un mécanisme ou un framework soit massivement utilisé démontre qu'il est utilisé, pas qu'il améliore la qualité ou le coût.
+</Note>
+
+<SectionHeader sectionId="contrat" label="03.1" />
+
+<Title size={3}>Le contrat d'une tâche déléguée</Title>
+
+<Text>Pour qu'un worker soit testable et remplaçable, toute tâche déléguée doit être encadrée par un <HighLight accent="green" bold>contrat explicite</HighLight> :</Text>
+
+<Table
+  headers={[{ label: "Élément du contrat" }, { label: "Question à laquelle il répond" }]}
+  rows={[
+    ['Objectif', 'Que doit accomplir le worker ?'],
+    ['Entrées autorisées', 'Quelles données ou quels états peut-il consommer ?'],
+    ['Format de sortie', 'Quel schéma de sortie est attendu (JSON, fichier, rapport) ?'],
+    ['Preuves requises', 'Quelles références ou vérifications doit-il fournir avec le résultat ?'],
+    ['Budget', "Combien d'appels, de tokens et d'étapes au maximum ?"],
+    ["Conditions d'échec", "Quand s'arrête-t-il en échec, proprement, plutôt que de bricoler ?"],
+    ["Critères d'acceptation", 'Comment la sortie sera-t-elle validée par le composant appelant ?'],
+  ]}
+/>
+
+<Text>Sans ce contrat, un worker n'est qu'un « prompt décrit dans un paragraphe » : difficile à tester isolément, à remplacer, à auditer. Le contrat est le pendant concret des <HighLight accent="green">tests déterministes</HighLight> de la section Evaluator-Optimizer.</Text>
+
+<SectionHeader sectionId="code-modele" label="03.2" />
+
+<Title size={3}>Code déterministe vs décision du modèle</Title>
+
+<Text>La question « quelles décisions pour le modèle, lesquelles pour le code ? » doit devenir un <HighLight accent="cyan" bold>critère systématique</HighLight>, appliqué à chaque étape :</Text>
+
+<Table
+  headers={[{ label: 'Décision' }, { label: 'Imposée par le code' }, { label: 'Confiée au modèle' }]}
+  rows={[
+    ['Routage de base', 'règles, embeddings, seuils calibrés', 'cas ambigus, hors périmètre'],
+    ["Contrôle d'accès", 'permissions, ACL, sandbox', 'jamais'],
+    ['Validation de schéma', 'parseurs, schémas, compilateurs', "cas où l'interprétation sémantique est requise"],
+    ['Budgets, timeouts, retries', 'infrastructure', 'jamais'],
+    ['Interprétation / adaptation', '—', 'résumé, réécriture, analyse, planification'],
+  ]}
+/>
+
+<Note title="Règle" variant="info">
+  <strong class="text-text-secondary">Ce qui est déterminable, vérifiable et répétable va dans le code ; ce qui demande interprétation, nuance ou adaptation va au modèle.</strong> C'est aussi la meilleure défense : un agent ne devrait <HighLight accent="red" bold>jamais</HighLight> être le juge de ses propres permissions.
+</Note>
+
+<SectionHeader sectionId="controle" label="04" />
+
+<SectionTitle>Contrôle & <HighLight accent="cyan">coordination</HighLight></SectionTitle>
+
+<Text>Ces mécanismes répondent à : <HighLight accent="cyan" bold>qui pilote qui, et comment les agents se parlent</HighLight>.</Text>
+
+<SectionHeader sectionId="orchestrator" label="01" />
+
+<Title size={3}>Orchestrator-Worker</Title>
+
+<Text>Un agent central — l'<HighLight accent="cyan" bold>orchestrateur</HighLight> — reçoit la tâche globale, la découpe en sous-tâches, les <HighLight accent="cyan" bold>délègue à des workers spécialisés</HighLight>, puis collecte, filtre et agrège leurs résultats. Contrairement à la parallélisation simple, les sous-tâches ne sont <strong class="text-text-secondary">pas prédéfinies</strong> : l'orchestrateur décide dynamiquement quoi déléguer.</Text>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as "Utilisateur"
+    participant O as "Orchestrateur"
+    participant W1 as "Worker Recherche"
+    participant W2 as "Worker Analyse"
+    participant W3 as "Worker Rédaction"
+    U->>O: Tâche globale
+    O->>O: Analyse + planification + découpage
+    O->>W1: Sous-tâche A (recherche de sources)
+    O->>W2: Sous-tâche B (analyse contradictoire)
+    O->>W3: Sous-tâche C (rédaction)
+    W1-->>O: Résultat A
+    W2-->>O: Résultat B
+    W3-->>O: Résultat C
+    Note over W1,W3: les trois workers s'exécutent en parallèle
+    O->>O: Agrégation, déduplication, synthèse
+    O-->>U: Rapport final consolidé
+```
+
+<Text><strong class="text-text-primary">Exemple concret.</strong> Génération d'un rapport de veille : « comparez le positionnement de deux constructeurs aéronautiques ». L'orchestrateur lance en parallèle un worker de recherche, un worker d'analyse financière et un worker de revue de presse, puis produit une synthèse sourcée.</Text>
+
+<Note variant="warning">
+  L'agrégation est le point de fragilité : il faut des règles de <strong class="text-text-secondary">provenance</strong> (d'où vient l'information ?) et une gestion explicite des <strong class="text-text-secondary">contradictions</strong>. Un bon découpage isole aussi les tâches pour limiter la contamination contextuelle.
+</Note>
+
+<DecisionCard accent="cyan" items={[
+  { label: 'Problème résolu', value: 'Tâche complexe et imprévisible, décomposable, nécessitant plusieurs expertises.' },
+  { label: "Quand l'employer", value: "La structure du travail n'est pas connue à l'avance. Des sous-tâches indépendantes permettent le parallélisme ; des sous-tâches dépendantes restent possibles via une exécution en plusieurs vagues." },
+  { label: 'Alternatives plus simples', value: 'Un appel unique bien prompté ; une chaîne fixe si les étapes sont connues.' },
+  { label: 'Coûts', value: "Latence de planification et d'agrégation, attente du worker le plus lent, multiplication des tokens (chaque worker re-prompt le contexte)." },
+  { label: 'Modes de défaillance', value: 'Mauvais découpage ; agrégation qui propage ou masque une erreur ; goulot si l\'orchestrateur devient un point unique.' },
+  { label: 'Garanties', value: 'Aucune garantie de justesse globale ; traçabilité des sous-résultats possible.' },
+  { label: "Comment l'évaluer", value: 'Comparer à une baseline mono-agent sur le même jeu ; mesurer le gain par sous-tâche, pas seulement sur la sortie finale.' },
+]} />
+
+<SectionHeader sectionId="chain" label="02" />
+
+<Title size={3}>Sequential Chain</Title>
+
+<Text>Les étapes interviennent <strong class="text-text-secondary">les unes après les autres</strong> : la sortie de l'étape N devient l'entrée de l'étape N+1. C'est le mécanisme le plus simple : <HighLight accent="green">linéaire, déterministe, prévisible</HighLight>. On y ajoute souvent des <HighLight accent="green">gates</HighLight> de qualité entre les étapes.</Text>
+
+<Note title="Au sens du glossaire" variant="info">
+  C'est un <strong class="text-text-secondary">workflow multi-appels</strong> : chaque maillon peut être un simple appel LLM sans boucle de contrôle. On ne parle d'agents que si une étape dispose d'un état, d'outils autonomes ou d'une décision dynamique.
+</Note>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as "Utilisateur"
+    participant A1 as "Étape 1 - Brouillon"
+    participant A2 as "Étape 2 - Correction"
+    participant A3 as "Étape 3 - Mise en forme"
+    participant A4 as "Étape 4 - Publication"
+    U->>A1: Brief de l'article
+    A1-->>A2: Brouillon brut
+    A2-->>A3: Texte corrigé (syntaxe, style)
+    A3-->>A4: Markdown formaté + métadonnées
+    A4-->>U: Article publié sur le CMS
+```
+
+<DecisionCard accent="cyan" items={[
+  { label: 'Problème résolu', value: 'Transformation séquentielle en étapes clairement identifiables.' },
+  { label: "Quand l'employer", value: "Le flux est stable, connu à l'avance, et chaque étape a un contrat de sortie vérifiable." },
+  { label: 'Alternatives plus simples', value: 'Un seul appel avec des étapes explicites dans le prompt ; du code déterministe pur.' },
+  { label: 'Coûts', value: 'Séquence sans parallélisme ; contexte cumulé si chaque étape reçoit tout l\'historique.' },
+  { label: 'Modes de défaillance', value: "Propagation d'erreur en cascade (hallucination amplifiée) ; blocage si une étape échoue sans retry." },
+  { label: 'Garanties', value: 'Déterminisme du flux (pas de la sortie) ; coûts et difficultés estimables.' },
+  { label: "Comment l'évaluer", value: "Mesurer la qualité par étape et l'impact d'une erreur amont sur la sortie finale." },
+]} />
+
+<SectionHeader sectionId="router" label="03" />
+
+<Title size={3}>Router</Title>
+
+<Text>Une couche de <HighLight accent="cyan" bold>routage</HighLight> classe la requête (intention, thème, difficulté) et la redirige vers <strong class="text-text-secondary">un seul</strong> sous-système expert. Contrairement à l'orchestrateur : ni découpage, ni agrégation. Le routeur est souvent doublé : un <HighLight accent="green">classifieur léger</HighLight> fait le premier tri, et un LLM prend le relais en cas de faible confiance (voir Cascade de modèles).</Text>
+
+```mermaid
+flowchart TD
+    Q["Requête entrante"] --> R_Router{"Routeur - classification"}
+    R_Router -->|"panne technique"| A1["Agent Support Technique"]
+    R_Router -->|"facturation / paiement"| A2["Agent Facturation"]
+    R_Router -->|"question produit"| A3["Agent Commercial"]
+    R_Router -->|"faible confiance"| H["Transfert humain"]
+    A1 --> F["Fini"]
+    A2 --> F
+    A3 --> F
+    H --> F
+```
+
+<Note title="Attention au cas ambigus" variant="warning">
+  Ne visez pas des catégories <em>disjointes et exhaustives</em> en langage naturel : une requête peut relever de deux domaines à la fois (« facturation » <strong class="text-text-secondary">et</strong> « incident technique »). Prévoyez toujours une <HighLight accent="yellow">route de repli explicite</HighLight> (clarification, transfert humain) et calibrez le seuil de confiance sur un jeu de validation.
+</Note>
+
+<DecisionCard accent="cyan" items={[
+  { label: 'Problème résolu', value: 'Volume élevé de requêtes hétérogènes à trier avant traitement.' },
+  { label: "Quand l'employer", value: 'Les catégories sont stables et les routes ont des coûts ou qualités différents.' },
+  { label: 'Alternatives plus simples', value: 'Règles, expressions régulières ou un unique modèle généraliste.' },
+  { label: 'Coûts', value: 'Coût du classifieur ; maintenance des routes ; coût caché des erreurs de classification.' },
+  { label: 'Modes de défaillance', value: 'Route erronée vers une impasse ; dérive de la distribution des requêtes ; route de repli absente.' },
+  { label: 'Garanties', value: 'Isolation par domaine (prompt, outils, permissions) ; pas de vision globale multi-expert.' },
+  { label: "Comment l'évaluer", value: 'Matrice de confusion du routeur, précision par route, taux de repli, coût moyen par requête.' },
+]} />
+
+<SectionHeader sectionId="parallel" label="04" />
+
+<Title size={3}>Parallel Branching (Fan-Out / Fan-In)</Title>
+
+<Text>Une tâche est distribuée à plusieurs branches indépendantes (<HighLight accent="cyan">fan-out</HighLight>), puis une étape d'agrégation combine les sorties (<HighLight accent="cyan">fan-in</HighLight>). Deux variantes canoniques : le <strong class="text-text-secondary">sectioning</strong> (chaque branche traite une portion distincte) et le <strong class="text-text-secondary">voting</strong> (plusieurs branches produisent la même sortie — voir Consensus).</Text>
+
+```mermaid
+flowchart TD
+    T["Tâche : comparer 3 notices de médicaments"] --> FO["Fan-Out"]
+    FO --> A1["Worker 1 - notice A"]
+    FO --> A2["Worker 2 - notice B"]
+    FO --> A3["Worker 3 - notice C"]
+    A1 --> FI["Fan-In - agrégateur"]
+    A2 --> FI
+    A3 --> FI
+    FI --> R["Tableau comparatif + synthèse"]
+```
+
+<Text><strong class="text-text-primary">Exemple concret.</strong> Un avocat dépose 40 contrats fournisseurs ; le système les traite par lots en parallèle, chaque worker extrait les clauses de responsabilité, délais et pénalités, puis une synthèse produit un tableau comparatif et signale les clauses atypiques.</Text>
+
+<DecisionCard accent="cyan" items={[
+  { label: 'Problème résolu', value: 'Traiter plusieurs éléments indépendants à la fois, ou produire plusieurs variantes.' },
+  { label: "Quand l'employer", value: 'Décomposition naturelle en lots/sections sans dépendance croisée.' },
+  { label: 'Alternatives plus simples', value: 'Traitement séquentiel ou boucle simple si le volume est faible.' },
+  { label: 'Coûts', value: 'Chaque branche repaye le contexte partagé ; pics d\'API à gérer (rate limits).' },
+  { label: 'Modes de défaillance', value: 'Incohérences entre branches ; agrégation qui écrase une information ; surcharge d\'API.' },
+  { label: 'Garanties', value: 'Résultats partiels possibles si une branche échoue ; chaque sous-résultat est attribuable.' },
+  { label: "Comment l'évaluer", value: "Qualité de l'agrégation, taux de contradictions détectées, gain de latence vs séquentiel." },
+]} />
+
+<SectionHeader sectionId="hierarchie" label="05" />
+
+<Title size={3}>Hierarchical Tree</Title>
+
+<Text>Structure à <strong class="text-text-secondary">plusieurs niveaux</strong> : un manager général délègue à des managers intermédiaires, qui pilotent chacun leur équipe. C'est l'extension d'Orchestrator-Worker quand le nombre d'agents devient trop grand pour qu'un seul superviseur garde une vision claire : chaque niveau <HighLight accent="green">réduit la portée de contrôle</HighLight> et compartimente le contexte.</Text>
+
+```mermaid
+flowchart TD
+    CEO["Manager Général"] --> M1["Manager Ops"]
+    CEO --> M2["Manager Produits"]
+    M1 --> W1["Worker 1a - Infra"]
+    M1 --> W2["Worker 1b - Support"]
+    M2 --> M3["Manager Front"]
+    M2 --> W3["Worker 2a - Backend"]
+    M3 --> W4["Worker Front x"]
+    W1 --> RES["Agrégation niveau 1"]
+    W2 --> RES
+    W3 --> RES
+    W4 --> RES
+    RES --> CEO
+```
+
+<Note variant="warning">
+  Risque de <strong class="text-text-secondary">dérive d'information</strong> : chaque compression entre niveaux peut perdre du détail. Les contrats inter-niveaux (rapports, formats) doivent être stables.
+</Note>
+
+<DecisionCard accent="cyan" items={[
+  { label: 'Problème résolu', value: "Coordination de dizaines d'agents dépassant la portée d'un superviseur unique." },
+  { label: "Quand l'employer", value: 'Le travail se décompose naturellement en sous-domaines avec un responsable par niveau.' },
+  { label: 'Alternatives plus simples', value: 'Un seul orchestrateur tant que le périmètre reste maîtrisable.' },
+  { label: 'Coûts', value: 'Latence cumulée à la remontée ; multiplication des appels par niveau.' },
+  { label: 'Modes de défaillance', value: "Perte d'information à chaque compression ; empilement de managers inutiles ; dérive du périmètre." },
+  { label: 'Garanties', value: 'Isolation de contexte par sous-équipe ; résilience partielle (une branche en panne).' },
+  { label: "Comment l'évaluer", value: "Comparer au superviseur unique à budget égal ; mesurer la fidélité de l'information remontée." },
+]} />
+
+<SectionHeader sectionId="communication" label="06" />
+
+<Title size={3}>Communication : allocation, P2P, blackboard & bus</Title>
+
+<Text>Les mécanismes de communication apportent des garanties qui ne découlent <strong class="text-text-secondary">pas automatiquement</strong> de leur topologie. Il faut distinguer la topologie des agents des garanties du système distribué sous-jacent.</Text>
+
+<Text><strong class="text-text-primary">Dynamic Task Allocation.</strong> Les tâches sont déposées dans un pool central ; chaque agent évalue ses capacités et se porte candidat par une « enchère ». Des travaux récents (<HighLight accent="cyan">AgentLance</HighLight>, <HighLight accent="cyan">Agora</HighLight>) étudient réellement ce mécanisme — mais passer de « des recherches explorent ce mécanisme » à « c'est prêt pour la production » est un <HighLight accent="red" bold>saut non démontré</HighLight>. Une enchère n'a de sens que si les agents ont des compétences ou des coûts réellement différents, si l'on dispose de mesures de performance fiables, et si le coût de l'enchère est inférieur au bénéfice de l'allocation. <strong class="text-text-secondary">En pratique, une simple file de tâches avec des workers spécialisés suffit presque toujours.</strong></Text>
+
+```mermaid
+flowchart LR
+    N1["Nœud 1 - Acheteur"] <-->|"négociation"| N2["Nœud 2 - Vendeur"]
+    N2 <-->|"sous-traitance"| N3["Nœud 3 - Logistique"]
+    N3 <-->|"partage de contexte"| N1
+```
+
+<Text><strong class="text-text-primary">15. Peer-to-Peer.</strong> Aucun orchestrateur : les agents communiquent directement et décident à qui transférer le contexte. La coordination est <HighLight accent="purple">émergente</HighLight>. Usage type : négociation acheteur/vendeur. Bénéfice annoncé : pas de point unique de défaillance <em>côté agents</em>. Nuance : supprimer le superviseur ne supprime pas les points uniques de l'<strong class="text-text-secondary">infrastructure</strong>. <strong class="text-accent-red">Aucune garantie de convergence.</strong></Text>
+
+<Text><strong class="text-text-primary">16. Blackboard.</strong> Tous les agents lisent et écrivent dans un espace d'état central partagé ; un contrôleur sélectionne l'agent compétent pour traiter les données « mûres ». C'est une mémoire partagée + contrôle opportuniste : l'ordre des étapes n'est pas connu à l'avance. Nuance décisive : partager un état ne garantit <HighLight accent="red" bold>ni consensus ni convergence</HighLight>. Il faut définir des règles de conflit, des versions et des conditions d'arrêt.</Text>
+
+<Text><strong class="text-text-primary">17. Message Bus.</strong> La communication est asynchrone, par publication/abonnement d'événements sur un bus (Kafka, RabbitMQ, NATS). Producteurs et consommateurs ne se connaissent pas. C'est une <HighLight accent="green">brique d'infrastructure mature</HighLight>, mais elle n'apporte pas automatiquement une coordination correcte : livraison, doublons, idempotence, ordre et reprise dépendent de la configuration. <strong class="text-text-secondary">Le couplage n'est pas supprimé, il est déplacé vers les contrats</strong> (schémas d'événements, sémantique des topics, garanties de livraison).</Text>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as "Producteur (ex. système d'entrée)"
+    participant B as "Bus d'événements (topics)"
+    participant C1 as "Agent - détection fraude"
+    participant C2 as "Agent - scoring risque"
+    participant C3 as "Agent - notification"
+    P->>B: Publie événement transaction.paiement
+    B-->>C1: Livre (abonné au topic)
+    B-->>C2: Livre (abonné au topic)
+    C1->>B: Publie événement fraude.detectee
+    B-->>C3: Livre
+    C3-->>C3: Notifie l'opérateur
+```
+
+<DecisionCard accent="pink" title="Fiche — Message Bus" items={[
+  { label: 'Problème résolu', value: 'Traitement continu de flux d\'événements avec découplage temporel et opérationnel des producteurs et consommateurs.' },
+  { label: "Quand l'employer", value: 'Les flux sont en temps réel, les consommateurs évoluent indépendamment, la charge est variable.' },
+  { label: 'Alternatives plus simples', value: 'Appels directs ou file de tâches si le volume et l\'asynchronisme ne le justifient pas.' },
+  { label: 'Coûts', value: 'Infra à exploiter (partitionnement, ordre) ; latence de sérialisation ; débogage asynchrone difficile.' },
+  { label: 'Modes de défaillance', value: "Doublons, désordre, perte d'événements, retraitement non idempotent." },
+  { label: 'Garanties', value: 'À spécifier explicitement : livraison, ordre, idempotence, reprise. Non acquises par défaut.' },
+  { label: "Comment l'évaluer", value: 'Taux de doublons traités, comportement en panne/reprise, latence bout-en-bout, cohérence de l\'état.' },
+]} />
+
+<SectionHeader sectionId="qualite" label="05" />
+
+<SectionTitle>Qualité & <HighLight accent="green">vérification</HighLight></SectionTitle>
+
+<Text>Ces mécanismes répondent à : <HighLight accent="green" bold>comment fiabiliser une sortie et la gouverner</HighLight>. Point transversal : <HighLight accent="yellow" bold>la redondance des agents ne doit pas être confondue avec l'indépendance des preuves</HighLight>.</Text>
+
+<SectionHeader sectionId="evaluator" label="07" />
+
+<Title size={3}>Evaluator-Optimizer</Title>
+
+<Text>Une étape <strong class="text-text-secondary">générateur</strong> produit un résultat ; une étape <strong class="text-text-secondary">évaluateur</strong> le juge selon une grille explicite. En cas d'échec, le générateur reçoit un feedback structuré et révise, jusqu'à validation ou épuisement d'un budget de révisions.</Text>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as "Utilisateur"
+    participant G as "Générateur"
+    participant E as "Évaluateur"
+    U->>G: Tâche + consignes
+    loop Boucle jusqu'à validation (budget max)
+        G->>E: Contenu produit
+        E->>E: Mesure selon la grille de critères
+        alt Échec aux critères
+            E-->>G: Feedback détaillé + corrections attendues
+        else Succès
+            E-->>U: Livrable validé
+        end
+    end
+```
+
+<Note title="Limite fondamentale" variant="danger">
+  Un évaluateur LLM qui relit une sortie <HighLight accent="red" bold>n'est pas une preuve de correction</HighLight>. Il peut manquer un défaut, valider sa propre erreur, ou pousser le générateur à satisfaire la grille au détriment de l'objectif réel. Le pattern est efficace <strong class="text-text-secondary">quand des critères vérifiables existent</strong> ; il est fragile quand l'évaluation repose sur le seul jugement du modèle.
+</Note>
+
+<DecisionCard accent="green" items={[
+  { label: 'Problème résolu', value: 'Améliorer itérativement une sortie selon des critères explicitables.' },
+  { label: "Quand l'employer", value: 'Les critères de qualité sont vérifiables et il y a un gain réel à l\'itération.' },
+  { label: 'Alternatives plus simples', value: 'Tests déterministes seuls ; une seule passe avec un prompt soigné.' },
+  { label: 'Coûts', value: 'Au moins 2 appels par itération ; risque de sur-optimisation de la grille.' },
+  { label: 'Modes de défaillance', value: 'Évaluateur qui rate un défaut ou valide sa propre erreur ; dérive vers la grille ; boucle coûteuse sans gain.' },
+  { label: 'Garanties', value: 'Aucune garantie de correction ; au mieux un gain mesurable si les critères sont objectifs.' },
+  { label: "Comment l'évaluer", value: 'Delta de qualité avant/après, nombre d\'itérations moyen, taux de faux positifs de l\'évaluateur, coût par livrable validé.' },
+]} />
+
+<SectionHeader sectionId="vote" label="08" />
+
+<Title size={3}>Consensus / Majority Voting</Title>
+
+<Text>Plusieurs exécutions indépendantes de la même tâche ; un algorithme (vote majoritaire, pondéré, clustering sémantique) ou un agent juge retient la réponse la plus convergente. C'est l'héritier de la <em>self-consistency</em>. <strong class="text-accent-red">Limite à expliciter :</strong> trois agents peuvent reproduire la même erreur parce qu'ils partagent le même modèle ou le même biais. <HighLight accent="yellow" bold>Quatre avis ne constituent pas quatre preuves indépendantes.</HighLight></Text>
+
+```mermaid
+flowchart TD
+    Q["Question ou tâche identique"] --> A1["Agent 1 - prompt A"]
+    Q --> A2["Agent 2 - prompt B"]
+    Q --> A3["Agent 3 - prompt C"]
+    Q --> A4["Agent 4 - modèle différent"]
+    A1 --> V["Fusion / vote majoritaire (sémantique)"]
+    A2 --> V
+    A3 --> V
+    A4 --> V
+    V -. "convergence" .-> R["Réponse retenue"]
+    V -. "divergence forte" .-> H["Abstention / escalade humain"]
+```
+
+<Note variant="warning">
+  Pour établir un <strong class="text-text-secondary">fait</strong>, confronter les réponses à des sources, des tests ou des outils indépendants est souvent plus pertinent que compter les voix. Le vote est utile quand il n'existe pas de vérificateur externe <strong class="text-text-secondary">et</strong> que les erreurs ne sont pas corrélées.
+</Note>
+
+<DecisionCard accent="green" items={[
+  { label: 'Problème résolu', value: 'Réduire les hallucinations non corrélées quand aucun vérificateur externe n\'est disponible.' },
+  { label: "Quand l'employer", value: 'Les agents peuvent être réellement diversifiés et l\'erreur est stochastique, pas systématique.' },
+  { label: 'Alternatives plus simples', value: 'Vérification externe (source, test, outil) — souvent plus fiable pour les faits.' },
+  { label: 'Coûts', value: 'N fois le coût d\'une réponse ; latence d\'attente de tous les votes.' },
+  { label: 'Modes de défaillance', value: 'Erreurs corrélées (biais partagés) → fausse confiance ; consensus artificiel ; vote qui élimine la bonne réponse minoritaire.' },
+  { label: 'Garanties', value: "Réduction d'erreur sous hypothèse d'indépendance. Aucune garantie en cas de biais partagé." },
+  { label: "Comment l'évaluer", value: "Taux d'erreur restant vs agent unique ; corrélation des erreurs entre agents ; conditions de gain." },
+]} />
+
+<SectionHeader sectionId="debat" label="09" />
+
+<Title size={3}>Multi-Agent Debate</Title>
+
+<Text>Deux ou plusieurs agents aux perspectives opposées débattent en plusieurs tours ; un modérateur tranche. L'hypothèse : l'échange contradictoire corrige les biais. <strong class="text-accent-red">Ce que la recherche montre réellement :</strong> le débat n'est <HighLight accent="red" bold>pas toujours supérieur</HighLight> au simple vote ni à l'auto-correction isolée. Effets parasites identifiés : <HighLight accent="yellow">conformisme sycophante</HighLight>, <HighLight accent="yellow">fragilité contextuelle</HighLight> et <HighLight accent="yellow">effondrement du consensus</HighLight>.</Text>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as "Utilisateur"
+    participant A as "Agent - position A"
+    participant B as "Agent - position B"
+    participant J as "Juge / modérateur"
+    U->>A: Sujet S + rôle A
+    U->>B: Sujet S + rôle B
+    loop Tours de débat
+        A->>B: Argument n (A)
+        B->>A: Contre-argument n (B)
+    end
+    A->>J: Position finale A
+    B->>J: Position finale B
+    J-->>U: Décision synthétisée + arguments clés
+```
+
+<Text>Le débat n'a de valeur que si l'on peut le <HighLight accent="cyan" bold>comparer</HighLight> à des alternatives plus simples, sur les mêmes tâches et à budget égal : baseline agent unique, vote indépendant, vérification externe. Sans cette comparaison, aucune conclusion ne peut être tirée.</Text>
+
+<DecisionCard accent="green" items={[
+  { label: 'Problème résolu', value: 'Explorer des perspectives opposées, exposer des angles morts.' },
+  { label: "Quand l'employer", value: "Les agents peuvent être réellement divers et l'on dispose d'un protocole de comparaison." },
+  { label: 'Alternatives plus simples', value: 'Agent unique ; vote ; auto-correction isolée (souvent aussi efficace et moins cher).' },
+  { label: 'Coûts', value: 'N tours × N agents × contexte croissant.' },
+  { label: 'Modes de défaillance', value: 'Consensus artificiel ; perturbation de raisonnements corrects ; juge sensible au style plutôt qu\'à la vérité.' },
+  { label: 'Garanties', value: 'Aucune supériorité garantie ; dépend fortement des prompts et des rôles.' },
+  { label: "Comment l'évaluer", value: 'Comparer à agent unique / vote / vérification externe, à budget égal et sur le même jeu.' },
+]} />
+
+<SectionHeader sectionId="redteam" label="10" />
+
+<Title size={3}>Red Teaming</Title>
+
+<Text>Un agent <strong class="text-text-secondary">attaquant</strong> tente de faire échouer ou détourner le système cible : hallucination forcée, injection d'instructions, contournement de garde-fous. Un <strong class="text-text-secondary">juge</strong> mesure le succès de chaque tentative et alimente l'adaptation des attaques.</Text>
+
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:target" class="mt-1 shrink-0 size-[18px] text-accent-green" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Métrique de succès objective</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Action dangereuse déclenchée, secret divulgué, taux de refus…</p>
+    </div>
+  </li>
+  <li class="flex items-start gap-3 p-3 rounded-block transition-colors hover:bg-surface-hover">
+    <Icon name="lucide:bug" class="mt-1 shrink-0 size-[18px] text-accent-purple" />
+    <div class="flex flex-col gap-0.5">
+      <span class="text-text-secondary text-[15px] font-semibold leading-[1.4]">Canaux d'attaque variés</span>
+      <p class="text-text-subtle text-[13px] leading-[1.5]">Prompt direct, contamination RAG, contenu de mails/fichiers, outils compromis</p>
+    </div>
+  </li>
+</ul>
+
+<Note title="À retenir" variant="danger">
+  <HighLight accent="red" bold>Aucune garantie d'exhaustivité</HighLight> : l'absence de faille trouvée n'est pas une preuve d'absence de faille. Cloisonnez les attaquants automatisés en sandbox : ils génèrent du contenu réellement dangereux.
+</Note>
+
+<DecisionCard accent="green" items={[
+  { label: 'Problème résolu', value: 'Découvrir des vulnérabilités avant les attaquants réels.' },
+  { label: "Quand l'employer", value: 'Avant tout déploiement à impact, et en continu pour les systèmes exposés.' },
+  { label: 'Alternatives plus simples', value: 'Tests manuels ciblés sur les scénarios critiques.' },
+  { label: 'Coûts', value: 'Boucle attaque/évaluation coûteuse ; confinement nécessaire des attaquants.' },
+  { label: 'Modes de défaillance', value: "Couverture incomplète ; définir « l'attaque a réussi » reste souvent subjectif." },
+  { label: 'Garanties', value: 'Aucune garantie d\'exhaustivité.' },
+  { label: "Comment l'évaluer", value: 'Taux de vulnérabilités découvertes, taux de faux positifs, reproductibilité des attaques.' },
+]} />
+
+<SectionHeader sectionId="hitl" label="11" />
+
+<Title size={3}>Human-in-the-Loop</Title>
+
+<Text>Un <strong class="text-text-secondary">point d'arrêt</strong> où le système sollicite un humain avant d'exécuter une action critique ou irréversible. Trois couches à ne pas confondre :</Text>
+
+<ol class="space-y-3 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-green"></span>
+    <span><strong class="text-text-secondary">Autorisation déterministe</strong> — permissions, règles métier, plafonds, allowlists. C'est le seul maillon qui <em>autorise</em> réellement.</span>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-yellow"></span>
+    <span><strong class="text-text-secondary">Estimation du risque</strong> — le modèle ou un classifieur aide à déterminer si une revue humaine est nécessaire. Il ne décide <em>jamais seul</em> qu'une action est sûre.</span>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <span><strong class="text-text-secondary">Approbation humaine</strong> — intervient quand la <em>politique</em> l'exige, pas simplement parce qu'un score a franchi un seuil.</span>
+  </li>
+</ol>
+
+```mermaid
+flowchart TD
+    A["Agent propose une action"] --> D{"Contrôles déterministes : permissions, règles métier, plafonds"}
+    D -->|"refusée"| R["Action rejetée"]
+    D -->|"autorisée"| G{"Revue requise par la politique ou le signal de risque ?"}
+    G -->|"non"| X["Exécution"]
+    G -->|"oui"| H["File d'approbation humaine"]
+    H -->|"rejetée"| R
+    H -->|"correction demandée"| I["Nouvelle proposition, puis contrôles depuis le début"]
+    I --> A
+    H -->|"approuvée"| D2{"Nouvelle vérification déterministe"}
+    D2 -->|"autorisée"| X
+    D2 -->|"refusée"| R
+```
+
+<Note title="Le seuil de risque peut ajouter une revue, jamais en retirer une" variant="warning">
+  Une approbation humaine ne contourne ni les permissions ni les règles métier : l'autorisation déterministe est vérifiée avant l'approbation et de nouveau avant l'exécution. Et attention à la <HighLight accent="red" bold>fatigue d'approbation</HighLight> : trop d'escalades → les réviseurs cliquent machinalement et le risque peut augmenter.
+</Note>
+
+<DecisionCard accent="green" items={[
+  { label: 'Problème résolu', value: 'Contrôler les actions à impact ou irréversibles ; satisfaire une obligation de conformité.' },
+  { label: "Quand l'employer", value: "Action à effet de bord important, ou exigence réglementaire d'audit." },
+  { label: 'Alternatives plus simples', value: "Guardrails déterministes ; confirmation au niveau de l'outil." },
+  { label: 'Coûts', value: "Latence d'approbation ; coût humain ; non scalable sans staff." },
+  { label: 'Modes de défaillance', value: 'Fatigue d\'approbation ; goulot de production ; seuil mal calibré.' },
+  { label: 'Garanties', value: 'Validation humaine traçable et auditable ; pas de garantie sur les cas non escaladés.' },
+  { label: "Comment l'évaluer", value: 'Taux d\'escalade, temps d\'approbation, taux d\'approbation « à l\'aveugle », incidents évités.' },
+]} />
+
+<SectionHeader sectionId="capacites" label="06" />
+
+<SectionTitle>Capacités & <HighLight accent="purple">gestion du contexte</HighLight></SectionTitle>
+
+<Text>Ces mécanismes répondent à : <HighLight accent="purple" bold>comment restreindre les accès, organiser et mémoriser</HighLight>.</Text>
+
+<SectionHeader sectionId="roles" label="12" />
+
+<Title size={3}>Role-based Task Decomposition</Title>
+
+<Text>Le problème est découpé en attribuant à chaque composant un <strong class="text-text-secondary">rôle métier distinct et contraint</strong> (nom, objectif, contraintes, ton). C'est le fondement de frameworks comme MetaGPT, ChatDev ou CAMEL.</Text>
+
+<Note title="Point critique" variant="warning">
+  Un persona est une <HighLight accent="yellow" bold>technique de prompt</HighLight>, pas une preuve de spécialisation. Donner à un modèle les rôles de Product Manager, Architecte, Développeur et QA ne crée pas automatiquement quatre compétences indépendantes. Au sens du glossaire, c'est un <strong class="text-text-secondary">workflow multi-appels structuré par rôles</strong>, pas quatre agents autonomes. Le bénéfice vient de la focalisation du contexte et des objectifs.
+</Note>
+
+```mermaid
+flowchart LR
+    PO["Product Manager"] --> ARCH["Architecte"]
+    ARCH --> DEV1["Ingénieur Front"]
+    ARCH --> DEV2["Ingénieur Back"]
+    DEV1 --> QA["QA Tester"]
+    DEV2 --> QA
+    QA --> PM["Project Manager - arbitrage"]
+```
+
+<Text>Pour qu'un découpage en rôles soit défendable, chaque rôle doit apporter <strong class="text-text-secondary">au moins un</strong> de ces éléments : un contexte spécialisé, des outils distincts, des permissions différentes, un modèle adapté, des critères d'évaluation spécifiques ou une capacité de travail indépendante (parallélisable). Sinon, <HighLight accent="cyan" bold>un seul agent avec un workflow structuré suffit</HighLight>.</Text>
+
+<DecisionCard accent="purple" items={[
+  { label: 'Problème résolu', value: 'Focaliser le contexte et les objectifs par responsabilité.' },
+  { label: "Quand l'employer", value: 'Les rôles apportent contexte, outils, permissions ou modèles distincts.' },
+  { label: 'Alternatives plus simples', value: 'Un agent unique avec un workflow structuré et des prompts par étape.' },
+  { label: 'Coûts', value: "Beaucoup d'appels et d'artefacts intermédiaires ; coordination lourde." },
+  { label: 'Modes de défaillance', value: 'Rôles redondants ou qui « improvisent » hors périmètre ; bavardage infini.' },
+  { label: 'Garanties', value: 'Ségrégation des responsabilités (traçabilité), pas de compétence garantie.' },
+  { label: "Comment l'évaluer", value: 'Comparer à un agent unique : mesurer si chaque rôle apporte un gain réel.' },
+]} />
+
+<SectionHeader sectionId="tools" label="13" />
+
+<Title size={3}>Tool-scoped Agents</Title>
+
+<Text>Chaque agent a l'accès exclusif à un outil lourd ou sensible : un agent SQL, un agent web scraping, un agent exécution Python. C'est un principe utile d'isolation et de séparation des capacités. <strong class="text-accent-red">Mais attention à une formulation trompeuse :</strong> isoler un outil dans un agent <HighLight accent="red" bold>ne constitue pas, à lui seul, une frontière de sécurité suffisante</HighLight>. La sécurité doit être imposée par le système qui exécute les actions, pas par le prompt.</Text>
+
+<Note title="Ce qui fait réellement la sécurité">
+  permissions minimales au niveau des outils et des identités techniques ; séparation lecture/écriture ; sandbox pour le code exécuté ; validation des arguments côté serveur ; limites de ressources et délais ; gestion des secrets hors du contexte du modèle ; confirmation explicite pour les opérations destructrices ; protection contre les injections d'instructions provenant de documents ou de résultats d'outils.
+</Note>
+
+<Text><strong class="text-text-primary">Exemple.</strong> Une plateforme de data analytics self-service route vers un agent analyste, qui délègue à l'agent SQL (seul détenteur des credentials), puis à l'agent Python (seul dans le sandbox). <HighLight accent="green">La sécurité vient des ACL de la base, du sandbox et de la séparation lecture/écriture — pas du rôle attribué au modèle.</HighLight></Text>
+
+<DecisionCard accent="purple" items={[
+  { label: 'Problème résolu', value: "Séparer les capacités et éviter l'erreur de sélection d'outil par un modèle généraliste." },
+  { label: "Quand l'employer", value: 'Outils sensibles ou lourds, besoin de cloisonner credentials et responsabilités.' },
+  { label: 'Alternatives plus simples', value: 'Permissions au niveau des outils dans un seul agent ; routage simple.' },
+  { label: 'Coûts', value: "Sous-utilisation d'outils ; overhead de routage ; multiplication d'agents." },
+  { label: 'Modes de défaillance', value: 'Goulot sur l\'agent spécialisé ; faux sentiment de sécurité si les contrôles système manquent.' },
+  { label: 'Garanties', value: 'Cloisonnement des accès si les contrôles sont appliqués côté système (permissions, sandbox).' },
+  { label: "Comment l'évaluer", value: "Tests d'accès (actions non autorisées), taux d'erreurs d'outil, isolation effective." },
+]} />
+
+<SectionHeader sectionId="memoire" label="14" />
+
+<Title size={3}>Context & State Management</Title>
+
+<Text>La gestion du contexte peut reposer sur un agent <strong class="text-text-secondary">dédié</strong> qui maintient, nettoie, condense et indexe l'état partagé (idée inspirée de MemGPT). <strong class="text-accent-green">Mais un agent mémoire n'est pas une nécessité pour avoir une mémoire.</strong> Une couche applicative classique — historique, base SQL, résumé incrémental, RAG, checkpoints — est souvent plus fiable, moins coûteuse et plus facile à tester.</Text>
+
+<Text>Il faut séparer quatre problèmes distincts, souvent confondus sous le mot « mémoire » :</Text>
+
+<Table
+  headers={[{ label: 'Problème' }, { label: 'Mécanisme typique' }]}
+  rows={[
+    ['Mémoire (contexte de session)', 'Historique, résumés progressifs'],
+    ["Persistance d'état", 'Base de données, checkpoints'],
+    ['Récupération de connaissances', 'RAG, index vectoriel'],
+    ['Compression du contexte', 'Résumés, distillation'],
+  ]}
+/>
+
+<DecisionCard accent="purple" items={[
+  { label: 'Problème résolu', value: 'Maintenir un contexte fiable sur des sessions longues ou multi-utilisateurs.' },
+  { label: "Quand l'employer", value: 'Les politiques de conservation, récupération et consolidation sont complexes et évolutives.' },
+  { label: 'Alternatives plus simples', value: 'Historique applicatif, base SQL, résumé incrémental, RAG — à essayer d\'abord.' },
+  { label: 'Coûts', value: "Perte d'information à la condensation ; latence lecture/écriture ; cohérence concurrente." },
+  { label: 'Modes de défaillance', value: 'Résumé qui écrase un détail vital ; conflits d\'écriture ; le composant devient critique.' },
+  { label: 'Garanties', value: 'Persistance et cohérence à définir (verrous, versions, politiques d\'éviction).' },
+  { label: "Comment l'évaluer", value: 'Fidélité des faits conservés, taux de rappel des informations pertinentes, coût du contexte.' },
+]} />
+
+<SectionHeader sectionId="ressources" label="07" />
+
+<SectionTitle>Gestion des <HighLight accent="yellow">ressources</HighLight></SectionTitle>
+
+<Text>Ces mécanismes répondent à : <HighLight accent="yellow" bold>comment économiser du calcul et de l'argent</HighLight>.</Text>
+
+<SectionHeader sectionId="reduction" label="18" />
+
+<Title size={3}>Context Reduction & Evidence Retrieval</Title>
+
+<Text>Un système peu coûteux (petit modèle, ou mieux : <HighLight accent="green" bold>outils déterministes</HighLight>) reçoit un gros volume de données brutes et n'en transmet au grand modèle que l'essentiel. <strong class="text-accent-red">Le point critique n'est pas le nombre de tokens économisés, mais le risque que le prétraitement supprime précisément le détail qui permettrait de trouver la cause d'un incident.</strong></Text>
+
+```mermaid
+flowchart LR
+    VOL["Volumes bruts : logs, docs, tickets"] --> SM["Filtrage déterministe + petit modèle"]
+    SM -->|"extrait + liens vers sources"| C["Contexte utile réduit"]
+    C --> GM["Grand modèle principal"]
+    GM -->|"retrieve si besoin"| SRC["Données sources (références conservées)"]
+    SRC --> GM
+    GM --> R["Réponse de haute qualité"]
+```
+
+<Text>Pour des logs ou des données structurées, commencez par du filtrage temporel, du regroupement d'erreurs, de la déduplication, de l'agrégation de métriques et de la sélection de fenêtres pertinentes. Le LLM intervient <strong class="text-text-secondary">ensuite</strong>.</Text>
+
+<Note title="Références vs complétude" variant="warning">
+  Un résumé irréversible est une mauvaise frontière d'information : conservez les références aux sources. Mais conserver des liens ne garantit pas la complétude. Distinguez quatre propriétés : <strong class="text-text-secondary">accessibilité</strong>, <strong class="text-text-secondary">rappel</strong>, <strong class="text-text-secondary">complétude</strong> et <strong class="text-text-secondary">vérifiabilité</strong>.
+</Note>
+
+<DecisionCard accent="yellow" items={[
+  { label: 'Problème résolu', value: "Réduire le coût/latence lorsque le volume d'entrée dépasse largement la fenêtre utile." },
+  { label: "Quand l'employer", value: 'Données volumineuses, filtrables par des critères objectifs et vérifiables.' },
+  { label: 'Alternatives plus simples', value: 'Filtrage déterministe seul ; RAG ciblé ; pagination.' },
+  { label: 'Coûts', value: 'Coût du petit modèle/pré-traitement ; réglage des critères de sélection.' },
+  { label: 'Modes de défaillance', value: 'Suppression du détail déterminant ; chaîne d\'erreurs sans recours aux sources.' },
+  { label: 'Garanties', value: 'La conservation des références permet de revenir aux sources, mais ne garantit ni le rappel ni la complétude.' },
+  { label: "Comment l'évaluer", value: 'Taux de rappel des informations critiques : le détail utile survit-il à la réduction ?' },
+]} />
+
+<SectionHeader sectionId="speculatif" label="19" />
+
+<Title size={3}>Exécution spéculative : deux mécanismes distincts</Title>
+
+<Text>Le n°19 mélange deux sujets aux garanties et objectifs différents. Il reste une seule entrée du catalogue, mais désigne <HighLight accent="yellow" bold>deux techniques distinctes</HighLight>.</Text>
+
+<Text><strong class="text-text-primary">19.1 Speculative decoding.</strong> Technique d'<HighLight accent="cyan" bold>accélération de l'inférence</HighLight> : un modèle auxiliaire propose des tokens, qu'un modèle cible vérifie selon un mécanisme probabiliste spécifique. Dans sa forme standard, elle vise à <strong class="text-text-secondary">préserver la distribution de génération du modèle cible</strong> tout en accélérant le décodage. Ce n'est pas « un petit modèle qui écrit une réponse qu'un grand valide ». Les gains de vitesse (de l'ordre de 2 à 3×) sont <HighLight accent="red">spécifiques à un couple de modèles et à un taux d'acceptation</HighLight>.</Text>
+
+<Text><strong class="text-text-primary">19.2 Draft-and-verify.</strong> <HighLight accent="purple" bold>Workflow applicatif</HighLight> : un agent rapide produit une solution, un agent puissant la révise et corrige. Ce mécanisme <HighLight accent="red" bold>ne garantit ni l'équivalence de la sortie ni un gain de latence</HighLight>. Si le modèle puissant doit examiner, vérifier et corriger le brouillon, il peut même avoir <em>plus</em> de travail. Et le TTFT (Time To First Token) n'est pas le temps d'obtention d'une réponse complète.</Text>
+
+```mermaid
+flowchart TD
+    subgraph Inf["19.1 Speculative decoding (inférence)"]
+        M1["Modèle auxiliaire : propose des tokens"] --> M2{"Modèle cible : vérifie (acceptation)"}
+        M2 -->|"accepté"| O1["Token accepté ; poursuivre la vérification"]
+        M2 -->|"rejeté"| RC["Échantillonner un token correctif dans la distribution résiduelle"]
+        RC --> CTX["Mettre à jour le contexte avec les tokens validés"]
+        O1 --> CTX
+        CTX --> M1
+    end
+    subgraph App["19.2 Draft-and-verify (applicatif)"]
+        T["Tâche"] --> D["Agent draft rapide"]
+        D --> GD["Brouillon complet"]
+        GD --> V{"Agent puissant : vérifie / corrige"}
+        V -->|"conforme"| O2["Livrable"]
+        V -->|"non conforme"| D
+    end
+```
+
+<DecisionCard accent="yellow" items={[
+  { label: 'Problème résolu (19.1)', value: 'Accélérer le décodage à distribution constante.' },
+  { label: 'Problème résolu (19.2)', value: "Déléguer la génération à un modèle rapide et faire vérifier par un modèle fort." },
+  { label: "Quand employer (19.1)", value: "Au niveau de l'infrastructure, avec un couple de modèles compatible." },
+  { label: "Quand employer (19.2)", value: 'Lorsque le coût et la latence de bout en bout (brouillon + vérification + corrections) sont meilleurs qu\'une génération directe, à qualité comparable.' },
+  { label: 'Alternatives plus simples', value: 'Modèle unique ; pour 19.2, un seul appel bien prompté.' },
+  { label: 'Modes de défaillance', value: "Faible taux d'acceptation ; brouillon raté coûteux ; vérification plus chère que génération." },
+  { label: 'Garanties', value: '19.1 : préservation de distribution (sous conditions). 19.2 : aucune garantie d\'équivalence ni de latence.' },
+  { label: "Comment l'évaluer", value: "19.1 : taux d'acceptation, vitesse à distribution équivalente. 19.2 : coût total et latence de bout en bout vs génération unique." },
+]} />
+
+<SectionHeader sectionId="cascade" label="20" />
+
+<Title size={3}>Model Cascade / Escalation</Title>
+
+<Text>Un modèle économique tente de répondre en premier. Si des signaux indiquent que sa réponse est insuffisante, la tâche peut être <HighLight accent="yellow" bold>escaladée</HighLight> au palier suivant (modèle intermédiaire, puis puissant, puis humain). C'est une application du routage basé sur l'incertitude — souvent plus économique que le vote, parce qu'il <strong class="text-text-secondary">sélectionne au lieu de toujours dépenser</strong>.</Text>
+
+<Note title="Le problème central" variant="warning">
+  Décider qu'une réponse est insuffisante est difficile. La confiance déclarée par un LLM n'est pas nécessairement calibrée, et un score de probabilité sur les tokens n'est pas une mesure directe de l'exactitude. Appuyez-vous sur plusieurs signaux : validité du schéma, succès des appels d'outils, tests externes, score de difficulté calibré, criticité de la tâche.
+</Note>
+
+```mermaid
+flowchart TD
+    R["Requête"] --> M1["Palier 1 - modèle économique (petit)"]
+    M1 --> C1{"Signaux d'échec / incertitude"}
+    C1 -->|"haute confiance"| OUT["Réponse directe - coût minimal"]
+    C1 -->|"faible ou échec"| M2["Palier 2 - modèle intermédiaire"]
+    M2 --> C2{"Encore incertain ?"}
+    C2 -->|"oui"| M3["Palier 3 - modèle puissant"]
+    C2 -->|"non"| OUT
+    M3 --> C3{"Ultime incertitude ?"}
+    C3 -->|"oui"| H["Humain"]
+    C3 -->|"non"| OUT
+    H --> OUT
+```
+
+<Note title="Attention aux chiffres" variant="danger">
+  « Coût divisé par cinq, qualité conservée » est une <HighLight accent="red" bold>hypothèse illustrative</HighLight>, pas un résultat établi. Une cascade peut coûter <strong class="text-text-secondary">plus cher</strong> qu'un modèle unique sur un trafic biaisé. Comparez toujours à budget égal.
+</Note>
+
+<DecisionCard accent="yellow" items={[
+  { label: 'Problème résolu', value: 'Traiter un volume hétérogène en réservant le calcul coûteux aux cas difficiles.' },
+  { label: "Quand l'employer", value: "La distribution de difficulté est étalée et l'on dispose de signaux d'échec objectifs." },
+  { label: 'Alternatives plus simples', value: 'Modèle unique ; routage fixe par règles.' },
+  { label: 'Coûts', value: '2-3 appels successifs pour les cas remontés ; monitoring inter-paliers.' },
+  { label: 'Modes de défaillance', value: 'Seuils mal calibrés (escalade tout ou rien) ; peut coûter plus cher qu\'un modèle unique sur du trafic biaisé.' },
+  { label: 'Garanties', value: "L'escalade alloue davantage de calcul aux cas signalés ; elle ne garantit ni l'amélioration ni un gain économique." },
+  { label: "Comment l'évaluer", value: 'Comparer la cascade à un modèle unique sur un même jeu, à budget égal, en mesurant qualité et coût.' },
+]} />
+
+<SectionHeader sectionId="production" label="08" />
+
+<SectionTitle>Production & <HighLight accent="red">confiance</HighLight></SectionTitle>
+
+<Text>Les mécanismes précédents décrivent le <strong class="text-text-secondary">chemin nominal</strong>. En production, les problèmes réels apparaissent souvent ailleurs : timeouts, reprises, sécurité, traçabilité. Cette partie traite ce qui sépare une démonstration fonctionnelle d'un système exploitable.</Text>
+
+<Title size={3}>Fiabilité opérationnelle</Title>
+
+<Text>Que se passe-t-il quand un worker ne répond jamais, qu'un outil tombe en panne, que deux agents modifient simultanément le même artefact, ou qu'une relance exécute deux fois une opération ? Il faut des mécanismes transverses :</Text>
+
+<Table
+  headers={[{ label: 'Mécanisme' }, { label: 'Rôle' }]}
+  rows={[
+    ["Timeouts et budgets d'exécution", 'Borner le temps et le coût par tâche et par run.'],
+    ['Annulation et propagation des erreurs', 'Arrêter proprement les branches en cours.'],
+    ['Retries avec limites et backoff', 'Gérer les défaillances transitoires sans boucle infinie.'],
+    ['Idempotence des opérations', 'Rendre une opération rejouable sans effet de bord.'],
+    ['Checkpoints et reprise', "Repartir d'un état connu après panne."],
+    ['Circuit breakers', 'Couper un service défaillant au lieu de le marteler.'],
+    ['Traces corrélées entre agents', 'Relier une décision à ses causes.'],
+    ['Limites de concurrence et de débit', "Éviter la surcharge d'API et les rate limits."],
+  ]}
+/>
+
+<Title size={3}>Sécurité des systèmes agentiques</Title>
+
+<Text>La sécurité ne peut pas être déléguée « à un autre agent qui vérifie ». Un agent n'est pas sûr parce qu'un autre agent joue le rôle de vérificateur.</Text>
+
+<Note title="Règle architecturale : la frontière de confiance" variant="danger">
+  Toute donnée produite par un agent, récupérée sur le Web ou issue d'un document doit être considérée comme <HighLight accent="red" bold>non fiable</HighLight> tant qu'elle n'a pas été validée par le système qui l'utilise. Le risque n'est pas seulement qu'un agent soit manipulé : il peut <strong class="text-text-secondary">recopier une instruction malveillante dans son résultat</strong>, qu'un autre interprétera comme légitime. La sécurité s'applique donc aux <strong class="text-text-secondary">transferts entre composants</strong>, pas seulement à l'entrée utilisateur.
+</Note>
+
+<Text>À traiter au minimum : prompt injection indirect, principe du moindre privilège, séparation données non fiables / instructions, gestion des secrets hors du contexte du modèle, effets de bord et opérations irréversibles, limites de sandbox, propagation d'instructions malveillantes entre agents, audit des actions réellement exécutées.</Text>
+
+<Title size={3}>Observabilité & provenance</Title>
+
+<Text>Un système multi-agents non tracé est impossible à déboguer. Il faut journaliser <strong class="text-text-secondary">les faits, pas le raisonnement interne</strong> du modèle : traces corrélées (identifiant de run propagé), outils appelés et leurs arguments, résultats observés, décisions prises et les critères objectifs qui les ont déclenchées, coûts et latences par étape, mouvements entre paliers.</Text>
+
+<Text>Maintenir une information fiable à travers les agents est un problème à part entière. Un agent qui reçoit un résumé ne devrait pas être obligé de lui faire aveuglément confiance : il devrait pouvoir retrouver les éléments sources, identifier les informations périmées et distinguer les <strong class="text-text-secondary">faits observés</strong> des <strong class="text-text-secondary">hypothèses générées</strong>.</Text>
+
+<SectionHeader sectionId="evaluation" label="09" />
+
+<SectionTitle>Évaluer &amp; <HighLight accent="green">décider</HighLight></SectionTitle>
+
+<Text>Un tableau « situation → pattern » saute directement du problème à la solution. Une démarche solide répond d'abord aux questions <strong class="text-text-secondary">dans l'ordre</strong> :</Text>
+
+<ol class="space-y-2 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <span><strong class="text-text-secondary">Quel problème cherche-t-on à résoudre ?</strong> Qualité insuffisante, tâche trop longue, contexte trop volumineux, outils trop nombreux, besoin de parallélisme, manque de contrôle ?</span>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <span><strong class="text-text-secondary">Le problème peut-il être résolu par un workflow simple ?</strong> Une chaîne d'étapes, du code déterministe, des appels d'outils ou une recherche documentaire suffisent-ils ?</span>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <span><strong class="text-text-secondary">Quel mécanisme agentique est réellement nécessaire ?</strong> Délégation dynamique, parallélisme, spécialistes, boucle de vérification, routage ?</span>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <span><strong class="text-text-secondary">Quelles garanties faut-il imposer ?</strong> Permissions, limites de coût, délais, reprise, validation, traçabilité, approbation.</span>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[10px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <span><strong class="text-text-secondary">Comment démontrer que l'architecture est meilleure ?</strong> Comparer à une baseline mono-agent sur la qualité, le coût, la latence et les échecs.</span>
+  </li>
+</ol>
+
+<Note title="La baseline et l'architecture candidate doivent satisfaire le même contrat">
+  La baseline n'est pas « un appel LLM nu » : c'est la solution la plus simple qui répond aux <strong class="text-text-secondary">mêmes exigences fonctionnelles, de sécurité et de service</strong>. Sinon, on confond le bénéfice de la coordination avec celui de fonctionnalités supplémentaires. Un mono-agent peut utiliser les mêmes outils et les mêmes contrôles système.
+</Note>
+
+<Title size={3}>Métriques à mesurer</Title>
+
+<Table
+  headers={[{ label: 'Dimension' }, { label: 'Métriques possibles' }]}
+  rows={[
+    ['Qualité', 'Taux de réussite, exactitude, conformité aux exigences'],
+    ['Coût', "Coût moyen et médian, coût au succès, tokens d'entrée/sortie"],
+    ['Performance', "Latence médiane, p95, temps jusqu'au premier token"],
+    ["Fiabilité", "Taux d'échec, timeouts, sorties invalides, reprises"],
+    ['Efficacité', "Nombre d'appels LLM, d'appels d'outils, de tours"],
+    ['Sécurité', 'Actions non autorisées, injections réussies, fuites de données'],
+  ]}
+/>
+
+<Text>Trois protocoles de comparaison répondent à trois questions différentes : <HighLight accent="cyan">budget comparable</HighLight> (à coût comparable, la qualité s'améliore-t-elle ?), <HighLight accent="green">qualité cible</HighLight> (quel coût minimal pour atteindre une qualité donnée ?) et <HighLight accent="purple">contraintes de service</HighLight> (latence, fiabilité, sécurité respectées ?).</Text>
+
+<Note title="Trois garanties méthodologiques" variant="warning">
+  <strong class="text-text-secondary">1. Intervalles d'incertitude.</strong> Rapporter des intervalles de confiance, pas seulement des moyennes. <strong class="text-text-secondary">2. Trois jeux, trois rôles.</strong> Le jeu de test final doit être protégé de l'optimisation répétée, sinon on optimise le benchmark plutôt que le système. <strong class="text-text-secondary">3. Coût au résultat réussi.</strong> Le coût moyen par requête est trompeur : une architecture qui coûte moins cher mais échoue davantage peut coûter plus cher au final.
+</Note>
+
+<Title size={3}>Chiffres : ne pas confondre illustration et règle</Title>
+
+<Text>Plusieurs objectifs chiffrés circulent (« 95 % des requêtes dans une route connue », « coût divisé par 100 », « gains de vitesse 2-3× »). Ils peuvent être pertinents dans un contexte précis, mais <HighLight accent="red" bold>sans protocole de mesure ils ressemblent à des règles universelles</HighLight>. Pour chaque chiffre, indiquez la source, les modèles et versions comparés, la métrique, le budget de calcul, et les limites de généralisation. Sinon, remplacez par une formulation qualitative.</Text>
+
+<Title size={3}>Quand simplifier ou retirer un mécanisme</Title>
+
+<Text>Une architecture agentique doit rester <HighLight accent="green" bold>réversible</HighLight> : prévoyez dès la conception les critères qui conduiront à <strong class="text-text-secondary">retirer</strong> un mécanisme plutôt qu'à l'ajuster. Signaux de simplification : gain de qualité trop faible face à la baseline, coût au succès supérieur, latence excessive pour le contrat de service, branches inutilisées, complexité opérationnelle supérieure au bénéfice. Si deux mécanismes successifs n'apportent pas de gain démontrable l'un par rapport à l'autre, <strong class="text-text-secondary">fusionnez-les ou supprimez-en un</strong>. Revenir à un workflow plus simple n'est pas un échec : c'est le coût de contrôle assumé.</Text>
+
+<SectionHeader sectionId="synthese" label="10" />
+
+<SectionTitle>Synthèse : <HighLight accent="green">situation → mécanismes</HighLight></SectionTitle>
+
+<Text>Ce tableau est un <strong class="text-text-secondary">point de départ</strong>, pas une règle de décision. Utilisez la méthode de la section précédente pour un choix rigoureux.</Text>
+
+<Table
+  headers={[{ label: 'Situation' }, { label: 'Mécanisme(s) recommandé(s)' }]}
+  rows={[
+    ['Workflow linéaire strict, étapes prédéfinies', 'Sequential Chain'],
+    ['Beaucoup de requêtes simples à trier', 'Router (± Model Cascade)'],
+    ['Tâche complexe, imprévisible, plusieurs expertises', 'Orchestrator-Worker'],
+    ['Analyser plusieurs sources indépendantes à la fois', 'Parallel Branching'],
+    ['Hiérarchie naturelle, dizaines d\'agents', 'Hierarchical Tree'],
+    ['Critères de qualité vérifiables, itération utile', 'Evaluator-Optimizer'],
+    ['Réduire des hallucinations non corrélées', 'Consensus / Voting (± vérification externe)'],
+    ['Explorer des perspectives opposées (à mesurer)', 'Multi-Agent Debate'],
+    ['Audit de sécurité avant production', 'Red Teaming'],
+    ['Actions critiques ou irréversibles', 'Human-in-the-Loop'],
+    ['Simuler une équipe ou un métier', 'Role-based Task Decomposition'],
+    ['Outils sensibles, restriction des accès', 'Tool-scoped Agents (+ contrôles système)'],
+    ['Sessions longues, contexte qui explose', 'Context & State Management (± Context Reduction)'],
+    ['Flux asynchrones à découplage temporel', 'Message Bus (brique d\'infrastructure)'],
+    ['Gros volumes de données à réduire avant analyse', 'Context Reduction & Evidence Retrieval'],
+    ['Volumes hétérogènes, réserver le calcul cher', 'Model Cascade / Escalation'],
+  ]}
+/>
+
+<Note title="Conseils de conception" variant="info">
+  <strong class="text-text-secondary">1.</strong> Commencez simple. <strong class="text-text-secondary">2.</strong> Les mécanismes se combinent. <strong class="text-text-secondary">3.</strong> Évaluez avant de complexifier, contre une baseline au même contrat. <strong class="text-text-secondary">4.</strong> Contrôlez coût et latence : les deux taxes du multi-agents. <strong class="text-text-secondary">5.</strong> Gardez des gates et des garde-fous. <strong class="text-text-secondary">6.</strong> Traitez la production dès la conception.
+</Note>
+
+<SectionHeader sectionId="conclusion" label="conclusion" />
+
+<SectionTitle>Conclusion : <HighLight accent="green">composer, pas choisir</HighLight></SectionTitle>
+
+<Text>Il n'existe pas de « meilleure » architecture multi-agents — seulement des <HighLight accent="cyan" bold>compromis</HighLight> : autonomie contre contrôle, coût contre qualité, parallélisme contre ordre, centralisation contre résilience.</Text>
+
+<Text>Le point le plus important de cet article est peut-être le plus simple : les vingt entrées du catalogue (le n°19 regroupant deux techniques distinctes) ne sont <HighLight accent="red" bold>pas vingt architectures entre lesquelles choisir</HighLight>, mais des <HighLight accent="green" bold>briques composables</HighLight> à positionner sur des axes de conception. Un catalogue permet de <em>nommer</em> des patterns ; une méthode permet de les <em>composer</em> et de <em>prouver</em> qu'ils apportent quelque chose.</Text>
+
+<Text>Comprendre ces mécanismes — leurs topologies, leurs forces, mais aussi leurs <strong class="text-text-secondary">modes de défaillance</strong>, leurs <strong class="text-text-secondary">garanties réelles</strong> et la manière de <strong class="text-text-secondary">démontrer leur intérêt</strong> — est ce qui permet de concevoir, de justifier et d'exploiter une architecture pour un cas d'usage donné.</Text>
+
+<Note title="Message à emporter">
+  Commencez par un LLM bien prompté. Complexifiez seulement si un besoin mesurable le justifie, mesurez systématiquement contre une baseline au même contrat, et gardez votre architecture <HighLight accent="green" bold>réversible</HighLight> : savoir retirer un mécanisme est une compétence de conception à part entière.
+</Note>
+
+<Title size={3}>Références</Title>
+
+<ol class="space-y-3 my-4 ml-6">
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <Link href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic — Building Effective Agents</Link>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <Link href="https://www.anthropic.com/engineering/multi-agent-research-system">Anthropic — How we built our multi-agent research system</Link>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <Link href="https://github.com/microsoft/multi-agent-reference-architecture/blob/main/docs/reference-architecture/Patterns.md">Microsoft — Multi-Agent Reference Architecture</Link>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <Link href="https://langchain-ai.github.io/langgraph/concepts/multi_agent/">LangGraph — Multi-agent concepts</Link>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <Link href="https://arxiv.org/abs/2211.17192">Speculative Decoding (Leviathan et al., 2023)</Link>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <Link href="https://arxiv.org/abs/2406.18665">RouteLLM</Link>
+  </li>
+  <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
+    <span class="mt-[6px] shrink-0 size-2 rounded-full bg-accent-cyan"></span>
+    <Link href="https://www.trychroma.com/research/context-rot">Context Rot — Chroma Research</Link>
+  </li>
+</ol>

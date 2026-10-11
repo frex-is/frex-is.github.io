@@ -1,0 +1,48 @@
+---
+import { Icon } from 'astro-icon/components'
+
+type Color = 'cyan' | 'green' | 'purple' | 'pink' | 'yellow' | 'red'
+
+interface Axis {
+  name: string
+  icon: string
+  color: Color
+  values: string[]
+}
+
+const axes: Axis[] = [
+  { name: 'Contrôle', icon: 'lucide:git-branch', color: 'cyan', values: ['Séquentiel', 'Routeur', 'Superviseur', 'Graphe dynamique'] },
+  { name: 'Décomposition du travail', icon: 'lucide:split', color: 'green', values: ['Tâches indépendantes', 'Hiérarchie', 'Collaboration itérative'] },
+  { name: 'Communication & état', icon: 'lucide:share-2', color: 'pink', values: ['Appels directs', 'Messages asynchrones', 'État partagé'] },
+  { name: 'Qualité & gouvernance', icon: 'lucide:shield-check', color: 'purple', values: ['Validation', 'Vote', 'Débat', 'Approbation humaine', 'Red teaming'] },
+  { name: 'Ressources', icon: 'lucide:coins', color: 'yellow', values: ['Routage de modèles', 'Réduction de contexte', 'Exécution spéculative'] },
+  { name: 'Capacités & sécurité', icon: 'lucide:lock', color: 'red', values: ['Accès aux outils', 'Restriction', 'Permissions'] },
+]
+
+const colorText: Record<Color, string> = {
+  cyan: 'text-accent-cyan',
+  green: 'text-accent-green',
+  purple: 'text-accent-purple',
+  pink: 'text-accent-pink',
+  yellow: 'text-accent-yellow',
+  red: 'text-accent-red',
+}
+---
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-6">
+  {axes.map((axis) => (
+    <div class="rounded-card border border-border bg-surface-card p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <Icon name={axis.icon} class:list={['size-[18px] shrink-0', colorText[axis.color]]} />
+        <h3 class="text-[14px] font-semibold text-text-primary leading-tight">{axis.name}</h3>
+      </div>
+      <div class="flex flex-wrap gap-1.5">
+        {axis.values.map((v) => (
+          <span class="text-[11px] font-medium px-2 py-0.5 rounded-pill border border-border text-text-subtle bg-surface-elevated/40">
+            {v}
+          </span>
+        ))}
+      </div>
+    </div>
+  ))}
+</div>
