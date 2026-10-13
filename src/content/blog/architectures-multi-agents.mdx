@@ -1,6 +1,6 @@
 ---
 title: "Architectures multi-agents : composer des briques, pas choisir un pattern"
-description: "Vocabulaire, axes de conception, catalogue de 20 mécanismes et méthode de décision : comment concevoir, évaluer et exploiter un système LLM multi-agents — et surtout, quand s'en passer."
+description: "Vocabulaire, axes de conception, catalogue de 20 mécanismes et méthode de décision : mes notes pour comprendre comment on conçoit et évalue un système LLM multi-agents — et surtout, quand s'en passer."
 date: "2026-10-11"
 readingTime: "40"
 tags:
@@ -125,11 +125,13 @@ import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
 
 <SectionHeader sectionId="intro" label="intro" />
 
-<Text>Quand on découvre les systèmes multi-agents, il y a une erreur de lecture très répandue : imaginer un catalogue de patterns parmi lesquels il faudrait <HighLight accent="yellow" bold>choisir</HighLight>. Comme si l'on devait opter pour « le » pattern adapté à son problème, à la manière d'un design pattern classique.</Text>
+<Text>Quand j'ai commencé à m'intéresser aux systèmes multi-agents, j'ai fait une erreur de lecture qui me semble assez répandue : imaginer un catalogue de patterns parmi lesquels il faudrait <HighLight accent="yellow" bold>choisir</HighLight>. Comme si l'on devait opter pour « le » pattern adapté à son problème, à la manière d'un design pattern classique.</Text>
 
-<Text>La réalité est différente. Les mécanismes que nous allons parcourir ne sont pas vingt architectures mutuellement exclusives : ce sont des <HighLight accent="cyan" bold>briques composables</HighLight>. Un même système réel en combine souvent trois ou quatre, à des niveaux différents. Un routeur, un orchestrateur et une boucle de vérification peuvent parfaitement cohabiter — cela ne fait pas « trois architectures », mais <HighLight accent="cyan" bold>une</HighLight> architecture assemblée à partir de trois mécanismes.</Text>
+<Text>En creusant, j'ai compris les choses autrement. Les mécanismes que nous allons parcourir ne sont pas vingt architectures mutuellement exclusives : ce sont des <HighLight accent="cyan" bold>briques composables</HighLight>. D'après les retours publiés (Anthropic, Microsoft, LangGraph…), un même système réel en combine souvent trois ou quatre, à des niveaux différents. Un routeur, un orchestrateur et une boucle de vérification peuvent parfaitement cohabiter — cela ne fait pas « trois architectures », mais <HighLight accent="cyan" bold>une</HighLight> architecture assemblée à partir de trois mécanismes.</Text>
 
-<Text>Cet article propose une grille de lecture pour <HighLight accent="green" bold>concevoir</HighLight>, <HighLight accent="green" bold>évaluer</HighLight> et <HighLight accent="green" bold>exploiter</HighLight> un système LLM multi-agents. Et, tout aussi important, pour savoir <HighLight accent="red" bold>quand ne pas en construire</HighLight>.</Text>
+<Text>Cet article rassemble la grille de lecture que je me suis construite pour comprendre comment on <HighLight accent="green" bold>conçoit</HighLight>, <HighLight accent="green" bold>évalue</HighLight> et <HighLight accent="green" bold>exploite</HighLight> un système LLM multi-agents. Et, tout aussi important, comment savoir <HighLight accent="red" bold>quand ne pas en construire</HighLight>.</Text>
+
+<Text>Précision importante : <strong class="text-text-secondary">je n'ai pas mis de système multi-agents en production</strong>. Ce qui suit est une synthèse de mes lectures (articles d'Anthropic, de Microsoft, de LangGraph, papiers de recherche — voir les références en fin d'article) et de petites expérimentations menées pour cet article. Prenez-le comme les notes structurées de quelqu'un qui apprend le sujet, pas comme un retour d'expert.</Text>
 
 <TagList tags={[
   { label: 'Agents IA' },
@@ -139,14 +141,14 @@ import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
 ]} />
 
 <Note title="La règle d'or" variant="info">
-  <HighLight accent="green" bold>Commencez simple.</HighLight> Un seul LLM bien prompté — éventuellement avec de la recherche documentaire — résout la majorité des cas. Ajoutez des agents, de la coordination ou des boucles uniquement si un <HighLight accent="yellow" bold>besoin mesurable</HighLight> le justifie. Tout système multi-agents échange de la latence, du coût et de la complexité opérationnelle contre un gain de performance qu'il faut <HighLight accent="yellow" bold>démontrer</HighLight>.
+  Le conseil qui revient dans quasiment toutes les sources que j'ai lues : <HighLight accent="green" bold>commencer simple.</HighLight> Un seul LLM bien prompté — éventuellement avec de la recherche documentaire — résoudrait la majorité des cas. On n'ajoute des agents, de la coordination ou des boucles que si un <HighLight accent="yellow" bold>besoin mesurable</HighLight> le justifie. Tout système multi-agents échange de la latence, du coût et de la complexité opérationnelle contre un gain de performance qu'il faut <HighLight accent="yellow" bold>démontrer</HighLight>.
 </Note>
 
 <SectionHeader sectionId="vocabulaire" label="01" />
 
 <SectionTitle>Vocabulaire : <HighLight accent="purple">de quoi parle-t-on vraiment ?</HighLight></SectionTitle>
 
-<Text>Le mot « agent » est employé à tort et à travers. Avant de discuter d'architectures, il faut fixer un vocabulaire. Les conventions ci-dessous ne sont pas universelles, mais elles rendent les discussions nettement plus précises.</Text>
+<Text>Le mot « agent » recouvre des choses très différentes selon qui l'emploie. Avant de parler d'architectures, j'ai trouvé utile de fixer un vocabulaire. Les conventions ci-dessous sont celles que je retiens pour cet article : elles ne sont pas universelles, mais elles m'ont aidé à y voir plus clair.</Text>
 
 <Table
   headers={[{ label: 'Terme' }, { label: 'Définition retenue' }]}
@@ -189,7 +191,7 @@ import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
 </ul>
 
 <Note title="Conséquence directe">
-  Appeler quatre fois le même modèle avec quatre prompts différents ne crée pas nécessairement quatre agents autonomes au sens architectural. Plusieurs mécanismes de cet article (vote, débat, personas, évaluateur) sont souvent présentés comme « multi-agents » alors qu'ils reposent sur de simples appels LLM différenciés. Cette distinction n'est pas cosmétique : elle change la robustesse, le coût et la testabilité du système.
+  Appeler quatre fois le même modèle avec quatre prompts différents ne crée pas nécessairement quatre agents autonomes au sens architectural. Plusieurs mécanismes de cet article (vote, débat, personas, évaluateur) sont souvent présentés comme « multi-agents » alors qu'ils reposent sur de simples appels LLM différenciés. Cette distinction me semble importante : elle a des conséquences sur la robustesse, le coût et la testabilité du système.
 </Note>
 
 <SectionHeader sectionId="continuum" label="01.2" />
@@ -215,7 +217,7 @@ import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
   </div>
 </div>
 
-<Text>Mais cette opposition est trop souvent présentée comme un choix binaire. En pratique :</Text>
+<Text>Mais on la lit souvent comme un choix binaire, alors que les deux se mélangent facilement :</Text>
 
 <ul class="space-y-2 my-4 ml-6">
   <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
@@ -232,21 +234,21 @@ import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
   </li>
 </ul>
 
-<Note title="La vraie question de conception" variant="info">
-  La bonne question n'est pas « workflow <em>ou</em> agent ? », mais : <HighLight accent="green" bold>quelles décisions confions-nous au modèle, et lesquelles gardons-nous dans du code déterministe ?</HighLight> C'est l'axe de conception le plus utile de tout cet article.
+<Note title="La question qui m'a le plus aidé" variant="info">
+  Plutôt que « workflow <em>ou</em> agent ? », je trouve plus utile de se demander : <HighLight accent="green" bold>quelles décisions confions-nous au modèle, et lesquelles gardons-nous dans du code déterministe ?</HighLight> C'est le fil rouge de cet article.
 </Note>
 
 <SectionHeader sectionId="regle-or" label="01.3" />
 
 <Title size={3}>La règle d'or</Title>
 
-<Text>Un seul LLM bien prompté (+ retrieval) couvre la majorité des besoins. On ajoute de la coordination uniquement si un besoin mesurable le justifie — et l'on compare toujours à une <HighLight accent="cyan" bold>baseline mono-agent</HighLight> qui répond aux mêmes exigences fonctionnelles, de sécurité et de service.</Text>
+<Text>Les sources que j'ai consultées convergent : un seul LLM bien prompté (+ retrieval) couvrirait la majorité des besoins. L'idée est de n'ajouter de la coordination que si un besoin mesurable le justifie — et de comparer à une <HighLight accent="cyan" bold>baseline mono-agent</HighLight> qui répond aux mêmes exigences fonctionnelles, de sécurité et de service.</Text>
 
 <SectionHeader sectionId="axes" label="02" />
 
 <SectionTitle>Les <HighLight accent="cyan">axes de conception</HighLight></SectionTitle>
 
-<Text>Plutôt que de choisir « un pattern », on conçoit un système en positionnant chaque mécanisme sur des axes <HighLight accent="cyan" bold>distincts mais interdépendants</HighLight>. Un système se décrit par un <HighLight accent="cyan" bold>vecteur</HighLight> sur ces axes, pas par un nom unique.</Text>
+<Text>Plutôt que de choisir « un pattern », je trouve plus parlant de décrire un système en positionnant chaque mécanisme sur des axes <HighLight accent="cyan" bold>distincts mais interdépendants</HighLight>. Un système se décrit par un <HighLight accent="cyan" bold>vecteur</HighLight> sur ces axes, pas par un nom unique.</Text>
 
 <AxisGrid />
 
@@ -265,14 +267,14 @@ import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
 <MechanismCatalog />
 
 <Note title="Comment lire les statuts de maturité" variant="warning">
-  La colonne de maturité est une <strong class="text-text-secondary">synthèse éditoriale volontairement grossière</strong>, à dire d'expert. Elle agrège quatre dimensions qu'un projet réel doit évaluer séparément : maturité technique, adoption, niveau de preuve et généralisation. Et rappelons-le : <HighLight accent="red" bold>l'adoption n'est pas la qualité</HighLight>. Qu'un mécanisme ou un framework soit massivement utilisé démontre qu'il est utilisé, pas qu'il améliore la qualité ou le coût.
+  La colonne de maturité est une <strong class="text-text-secondary">appréciation personnelle et volontairement grossière</strong>, construite à partir de mes lectures, pas d'une expérience de terrain. Elle mélange quatre dimensions qu'il faudrait idéalement évaluer séparément : maturité technique, adoption, niveau de preuve et généralisation. Et gardons en tête que <HighLight accent="red" bold>l'adoption n'est pas la qualité</HighLight>. Qu'un mécanisme ou un framework soit massivement utilisé démontre qu'il est utilisé, pas qu'il améliore la qualité ou le coût.
 </Note>
 
 <SectionHeader sectionId="contrat" label="03.1" />
 
 <Title size={3}>Le contrat d'une tâche déléguée</Title>
 
-<Text>Pour qu'un worker soit testable et remplaçable, toute tâche déléguée doit être encadrée par un <HighLight accent="green" bold>contrat explicite</HighLight> :</Text>
+<Text>Pour qu'un worker soit testable et remplaçable, il me paraît utile d'encadrer chaque tâche déléguée par un <HighLight accent="green" bold>contrat explicite</HighLight>. Voici les éléments que je retiens :</Text>
 
 <Table
   headers={[{ label: "Élément du contrat" }, { label: "Question à laquelle il répond" }]}
@@ -287,13 +289,13 @@ import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
   ]}
 />
 
-<Text>Sans ce contrat, un worker n'est qu'un « prompt décrit dans un paragraphe » : difficile à tester isolément, à remplacer, à auditer. Le contrat est le pendant concret des <HighLight accent="green">tests déterministes</HighLight> de la section Evaluator-Optimizer.</Text>
+<Text>Sans ce contrat, un worker risque de n'être qu'un « prompt décrit dans un paragraphe » : difficile à tester isolément, à remplacer, à auditer. Le contrat est le pendant concret des <HighLight accent="green">tests déterministes</HighLight> de la section Evaluator-Optimizer.</Text>
 
 <SectionHeader sectionId="code-modele" label="03.2" />
 
 <Title size={3}>Code déterministe vs décision du modèle</Title>
 
-<Text>La question « quelles décisions pour le modèle, lesquelles pour le code ? » doit devenir un <HighLight accent="cyan" bold>critère systématique</HighLight>, appliqué à chaque étape :</Text>
+<Text>La question « quelles décisions pour le modèle, lesquelles pour le code ? » gagne, à mon sens, à devenir un <HighLight accent="cyan" bold>réflexe systématique</HighLight>, posé à chaque étape. Voici la répartition qui ressort de mes lectures :</Text>
 
 <Table
   headers={[{ label: 'Décision' }, { label: 'Imposée par le code' }, { label: 'Confiée au modèle' }]}
@@ -306,8 +308,8 @@ import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
   ]}
 />
 
-<Note title="Règle" variant="info">
-  <strong class="text-text-secondary">Ce qui est déterminable, vérifiable et répétable va dans le code ; ce qui demande interprétation, nuance ou adaptation va au modèle.</strong> C'est aussi la meilleure défense : un agent ne devrait <HighLight accent="red" bold>jamais</HighLight> être le juge de ses propres permissions.
+<Note title="Le principe que je retiens" variant="info">
+  <strong class="text-text-secondary">Ce qui est déterminable, vérifiable et répétable va dans le code ; ce qui demande interprétation, nuance ou adaptation va au modèle.</strong> D'après les recommandations de sécurité que j'ai lues, c'est aussi une défense importante : un agent ne devrait <HighLight accent="red" bold>jamais</HighLight> être le juge de ses propres permissions.
 </Note>
 
 <SectionHeader sectionId="controle" label="04" />
@@ -436,7 +438,7 @@ flowchart TD
 ```
 
 <Note title="Attention au cas ambigus" variant="warning">
-  Ne visez pas des catégories <em>disjointes et exhaustives</em> en langage naturel : une requête peut relever de deux domaines à la fois (« facturation » <strong class="text-text-secondary">et</strong> « incident technique »). Prévoyez toujours une <HighLight accent="yellow">route de repli explicite</HighLight> (clarification, transfert humain) et calibrez le seuil de confiance sur un jeu de validation.
+  Viser des catégories <em>disjointes et exhaustives</em> en langage naturel semble illusoire : une requête peut relever de deux domaines à la fois (« facturation » <strong class="text-text-secondary">et</strong> « incident technique »). D'où l'intérêt d'une <HighLight accent="yellow">route de repli explicite</HighLight> (clarification, transfert humain) et d'un seuil de confiance calibré sur un jeu de validation.
 </Note>
 
 <DecisionCard accent="cyan" items={[
@@ -532,7 +534,7 @@ flowchart TD
   <Title size={3}>Dynamic Task Allocation</Title>
 </div>
 
-<Text>Les tâches sont déposées dans un pool central ; chaque agent évalue ses capacités et se porte candidat par une « enchère ». Des travaux récents (<HighLight accent="cyan">AgentLance</HighLight>, <HighLight accent="cyan">Agora</HighLight>) étudient réellement ce mécanisme — mais passer de « des recherches explorent ce mécanisme » à « c'est prêt pour la production » est un <HighLight accent="red" bold>saut non démontré</HighLight>. Une enchère n'a de sens que si les agents ont des compétences ou des coûts réellement différents, si l'on dispose de mesures de performance fiables, et si le coût de l'enchère est inférieur au bénéfice de l'allocation. <strong class="text-text-secondary">En pratique, une simple file de tâches avec des workers spécialisés suffit presque toujours.</strong></Text>
+<Text>Les tâches sont déposées dans un pool central ; chaque agent évalue ses capacités et se porte candidat par une « enchère ». Des travaux récents (<HighLight accent="cyan">AgentLance</HighLight>, <HighLight accent="cyan">Agora</HighLight>) étudient réellement ce mécanisme — mais passer de « des recherches explorent ce mécanisme » à « c'est prêt pour la production » est un <HighLight accent="red" bold>saut non démontré</HighLight>. Une enchère n'a de sens que si les agents ont des compétences ou des coûts réellement différents, si l'on dispose de mesures de performance fiables, et si le coût de l'enchère est inférieur au bénéfice de l'allocation. <strong class="text-text-secondary">Mon intuition à ce stade : une simple file de tâches avec des workers spécialisés devrait suffire dans la grande majorité des cas.</strong></Text>
 
 <div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
   <MaturityBadge level="Exploratoire" />
@@ -622,7 +624,7 @@ sequenceDiagram
 ```
 
 <Note title="Limite fondamentale" variant="danger">
-  Un évaluateur LLM qui relit une sortie <HighLight accent="red" bold>n'est pas une preuve de correction</HighLight>. Il peut manquer un défaut, valider sa propre erreur, ou pousser le générateur à satisfaire la grille au détriment de l'objectif réel. Le pattern est efficace <strong class="text-text-secondary">quand des critères vérifiables existent</strong> ; il est fragile quand l'évaluation repose sur le seul jugement du modèle.
+  Un évaluateur LLM qui relit une sortie <HighLight accent="red" bold>n'est pas une preuve de correction</HighLight>. Il peut manquer un défaut, valider sa propre erreur, ou pousser le générateur à satisfaire la grille au détriment de l'objectif réel. Le pattern semble surtout efficace <strong class="text-text-secondary">quand des critères vérifiables existent</strong> ; il paraît fragile quand l'évaluation repose sur le seul jugement du modèle.
 </Note>
 
 <DecisionCard accent="green" items={[
@@ -659,7 +661,7 @@ flowchart TD
 ```
 
 <Note variant="warning">
-  Pour établir un <strong class="text-text-secondary">fait</strong>, confronter les réponses à des sources, des tests ou des outils indépendants est souvent plus pertinent que compter les voix. Le vote est utile quand il n'existe pas de vérificateur externe <strong class="text-text-secondary">et</strong> que les erreurs ne sont pas corrélées.
+  Pour établir un <strong class="text-text-secondary">fait</strong>, confronter les réponses à des sources, des tests ou des outils indépendants est souvent plus pertinent que compter les voix. Le vote semble surtout utile quand il n'existe pas de vérificateur externe <strong class="text-text-secondary">et</strong> que les erreurs ne sont pas corrélées.
 </Note>
 
 <DecisionCard accent="green" items={[
@@ -679,7 +681,7 @@ flowchart TD
   <Title size={3}>Multi-Agent Debate</Title>
 </div>
 
-<Text>Deux ou plusieurs agents aux perspectives opposées débattent en plusieurs tours ; un modérateur tranche. L'hypothèse : l'échange contradictoire corrige les biais. <strong class="text-accent-red">Ce que la recherche montre réellement :</strong> le débat n'est <HighLight accent="red" bold>pas toujours supérieur</HighLight> au simple vote ni à l'auto-correction isolée. Effets parasites identifiés : <HighLight accent="yellow">conformisme sycophante</HighLight>, <HighLight accent="yellow">fragilité contextuelle</HighLight> et <HighLight accent="yellow">effondrement du consensus</HighLight>.</Text>
+<Text>Deux ou plusieurs agents aux perspectives opposées débattent en plusieurs tours ; un modérateur tranche. L'hypothèse : l'échange contradictoire corrige les biais. <strong class="text-accent-red">Ce que montrent les travaux que j'ai pu lire :</strong> le débat n'est <HighLight accent="red" bold>pas toujours supérieur</HighLight> au simple vote ni à l'auto-correction isolée. Effets parasites identifiés : <HighLight accent="yellow">conformisme sycophante</HighLight>, <HighLight accent="yellow">fragilité contextuelle</HighLight> et <HighLight accent="yellow">effondrement du consensus</HighLight>.</Text>
 
 ```mermaid
 sequenceDiagram
@@ -699,7 +701,7 @@ sequenceDiagram
     J-->>U: Décision synthétisée + arguments clés
 ```
 
-<Text>Le débat n'a de valeur que si l'on peut le <HighLight accent="cyan" bold>comparer</HighLight> à des alternatives plus simples, sur les mêmes tâches et à budget égal : baseline agent unique, vote indépendant, vérification externe. Sans cette comparaison, aucune conclusion ne peut être tirée.</Text>
+<Text>Le débat n'a de valeur que si l'on peut le <HighLight accent="cyan" bold>comparer</HighLight> à des alternatives plus simples, sur les mêmes tâches et à budget égal : baseline agent unique, vote indépendant, vérification externe. Sans cette comparaison, difficile d'en conclure quoi que ce soit.</Text>
 
 <DecisionCard accent="green" items={[
   { label: 'Problème résolu', value: 'Explorer des perspectives opposées, exposer des angles morts.' },
@@ -738,7 +740,7 @@ sequenceDiagram
 </ul>
 
 <Note title="À retenir" variant="danger">
-  <HighLight accent="red" bold>Aucune garantie d'exhaustivité</HighLight> : l'absence de faille trouvée n'est pas une preuve d'absence de faille. Cloisonnez les attaquants automatisés en sandbox : ils génèrent du contenu réellement dangereux.
+  <HighLight accent="red" bold>Aucune garantie d'exhaustivité</HighLight> : l'absence de faille trouvée n'est pas une preuve d'absence de faille. Les sources recommandent aussi de cloisonner les attaquants automatisés en sandbox : ils génèrent du contenu réellement dangereux.
 </Note>
 
 <DecisionCard accent="green" items={[
@@ -833,7 +835,7 @@ flowchart LR
     QA --> PM["Project Manager - arbitrage"]
 ```
 
-<Text>Pour qu'un découpage en rôles soit défendable, chaque rôle doit apporter <strong class="text-text-secondary">au moins un</strong> de ces éléments : un contexte spécialisé, des outils distincts, des permissions différentes, un modèle adapté, des critères d'évaluation spécifiques ou une capacité de travail indépendante (parallélisable). Sinon, <HighLight accent="cyan" bold>un seul agent avec un workflow structuré suffit</HighLight>.</Text>
+<Text>Le critère que je retiens : un découpage en rôles me paraît défendable si chaque rôle apporte <strong class="text-text-secondary">au moins un</strong> de ces éléments : un contexte spécialisé, des outils distincts, des permissions différentes, un modèle adapté, des critères d'évaluation spécifiques ou une capacité de travail indépendante (parallélisable). Sinon, <HighLight accent="cyan" bold>un seul agent avec un workflow structuré suffit</HighLight>.</Text>
 
 <DecisionCard accent="purple" items={[
   { label: 'Problème résolu', value: 'Focaliser le contexte et les objectifs par responsabilité.' },
@@ -877,9 +879,9 @@ flowchart LR
   <Title size={3}>Context & State Management</Title>
 </div>
 
-<Text>La gestion du contexte peut reposer sur un agent <strong class="text-text-secondary">dédié</strong> qui maintient, nettoie, condense et indexe l'état partagé (idée inspirée de MemGPT). <strong class="text-accent-green">Mais un agent mémoire n'est pas une nécessité pour avoir une mémoire.</strong> Une couche applicative classique — historique, base SQL, résumé incrémental, RAG, checkpoints — est souvent plus fiable, moins coûteuse et plus facile à tester.</Text>
+<Text>La gestion du contexte peut reposer sur un agent <strong class="text-text-secondary">dédié</strong> qui maintient, nettoie, condense et indexe l'état partagé (idée inspirée de MemGPT). <strong class="text-accent-green">Mais un agent mémoire n'est pas une nécessité pour avoir une mémoire.</strong> Une couche applicative classique — historique, base SQL, résumé incrémental, RAG, checkpoints — semble souvent plus fiable, moins coûteuse et plus facile à tester.</Text>
 
-<Text>Il faut séparer quatre problèmes distincts, souvent confondus sous le mot « mémoire » :</Text>
+<Text>Il me semble utile de séparer quatre problèmes distincts, souvent confondus sous le mot « mémoire » :</Text>
 
 <Table
   headers={[{ label: 'Problème' }, { label: 'Mécanisme typique' }]}
@@ -926,10 +928,10 @@ flowchart LR
     GM --> R["Réponse de haute qualité"]
 ```
 
-<Text>Pour des logs ou des données structurées, commencez par du filtrage temporel, du regroupement d'erreurs, de la déduplication, de l'agrégation de métriques et de la sélection de fenêtres pertinentes. Le LLM intervient <strong class="text-text-secondary">ensuite</strong>.</Text>
+<Text>Pour des logs ou des données structurées, l'approche généralement recommandée consiste à commencer par du filtrage temporel, du regroupement d'erreurs, de la déduplication, de l'agrégation de métriques et de la sélection de fenêtres pertinentes. Le LLM intervient <strong class="text-text-secondary">ensuite</strong>.</Text>
 
 <Note title="Références vs complétude" variant="warning">
-  Un résumé irréversible est une mauvaise frontière d'information : conservez les références aux sources. Mais conserver des liens ne garantit pas la complétude. Distinguez quatre propriétés : <strong class="text-text-secondary">accessibilité</strong>, <strong class="text-text-secondary">rappel</strong>, <strong class="text-text-secondary">complétude</strong> et <strong class="text-text-secondary">vérifiabilité</strong>.
+  Un résumé irréversible est une mauvaise frontière d'information : mieux vaut conserver les références aux sources. Mais conserver des liens ne garantit pas la complétude. Il faut distinguer quatre propriétés : <strong class="text-text-secondary">accessibilité</strong>, <strong class="text-text-secondary">rappel</strong>, <strong class="text-text-secondary">complétude</strong> et <strong class="text-text-secondary">vérifiabilité</strong>.
 </Note>
 
 <DecisionCard accent="yellow" items={[
@@ -995,7 +997,7 @@ flowchart TD
 <Text>Un modèle économique tente de répondre en premier. Si des signaux indiquent que sa réponse est insuffisante, la tâche peut être <HighLight accent="yellow" bold>escaladée</HighLight> au palier suivant (modèle intermédiaire, puis puissant, puis humain). C'est une application du routage basé sur l'incertitude — souvent plus économique que le vote, parce qu'il <strong class="text-text-secondary">sélectionne au lieu de toujours dépenser</strong>.</Text>
 
 <Note title="Le problème central" variant="warning">
-  Décider qu'une réponse est insuffisante est difficile. La confiance déclarée par un LLM n'est pas nécessairement calibrée, et un score de probabilité sur les tokens n'est pas une mesure directe de l'exactitude. Appuyez-vous sur plusieurs signaux : validité du schéma, succès des appels d'outils, tests externes, score de difficulté calibré, criticité de la tâche.
+  Décider qu'une réponse est insuffisante est difficile. La confiance déclarée par un LLM n'est pas nécessairement calibrée, et un score de probabilité sur les tokens n'est pas une mesure directe de l'exactitude. Les approches que j'ai vues combinent plusieurs signaux : validité du schéma, succès des appels d'outils, tests externes, score de difficulté calibré, criticité de la tâche.
 </Note>
 
 ```mermaid
@@ -1014,7 +1016,7 @@ flowchart TD
 ```
 
 <Note title="Attention aux chiffres" variant="danger">
-  « Coût divisé par cinq, qualité conservée » est une <HighLight accent="red" bold>hypothèse illustrative</HighLight>, pas un résultat établi. Une cascade peut coûter <strong class="text-text-secondary">plus cher</strong> qu'un modèle unique sur un trafic biaisé. Comparez toujours à budget égal.
+  « Coût divisé par cinq, qualité conservée » est une <HighLight accent="red" bold>hypothèse illustrative</HighLight>, pas un résultat établi. Une cascade peut coûter <strong class="text-text-secondary">plus cher</strong> qu'un modèle unique sur un trafic biaisé. D'où l'importance de comparer à budget égal.
 </Note>
 
 <DecisionCard accent="yellow" items={[
@@ -1031,11 +1033,11 @@ flowchart TD
 
 <SectionTitle>Production & <HighLight accent="red">confiance</HighLight></SectionTitle>
 
-<Text>Les mécanismes précédents décrivent le <strong class="text-text-secondary">chemin nominal</strong>. En production, les problèmes réels apparaissent souvent ailleurs : timeouts, reprises, sécurité, traçabilité. Cette partie traite ce qui sépare une démonstration fonctionnelle d'un système exploitable.</Text>
+<Text>Les mécanismes précédents décrivent le <strong class="text-text-secondary">chemin nominal</strong>. Je n'ai pas d'expérience de production sur ce type de système : cette partie reprend ce que soulignent les retours d'expérience publiés et les bonnes pratiques classiques des systèmes distribués. D'après eux, en production, les problèmes réels apparaissent souvent ailleurs : timeouts, reprises, sécurité, traçabilité.</Text>
 
 <Title size={3}>Fiabilité opérationnelle</Title>
 
-<Text>Que se passe-t-il quand un worker ne répond jamais, qu'un outil tombe en panne, que deux agents modifient simultanément le même artefact, ou qu'une relance exécute deux fois une opération ? Il faut des mécanismes transverses :</Text>
+<Text>Que se passe-t-il quand un worker ne répond jamais, qu'un outil tombe en panne, que deux agents modifient simultanément le même artefact, ou qu'une relance exécute deux fois une opération ? Les mécanismes transverses habituellement cités :</Text>
 
 <Table
   headers={[{ label: 'Mécanisme' }, { label: 'Rôle' }]}
@@ -1053,17 +1055,17 @@ flowchart TD
 
 <Title size={3}>Sécurité des systèmes agentiques</Title>
 
-<Text>La sécurité ne peut pas être déléguée « à un autre agent qui vérifie ». Un agent n'est pas sûr parce qu'un autre agent joue le rôle de vérificateur.</Text>
+<Text>Un point qui revient dans toutes les recommandations que j'ai lues : la sécurité ne peut pas être déléguée « à un autre agent qui vérifie ». Un agent n'est pas sûr parce qu'un autre agent joue le rôle de vérificateur.</Text>
 
-<Note title="Règle architecturale : la frontière de confiance" variant="danger">
+<Note title="La frontière de confiance" variant="danger">
   Toute donnée produite par un agent, récupérée sur le Web ou issue d'un document doit être considérée comme <HighLight accent="red" bold>non fiable</HighLight> tant qu'elle n'a pas été validée par le système qui l'utilise. Le risque n'est pas seulement qu'un agent soit manipulé : il peut <strong class="text-text-secondary">recopier une instruction malveillante dans son résultat</strong>, qu'un autre interprétera comme légitime. La sécurité s'applique donc aux <strong class="text-text-secondary">transferts entre composants</strong>, pas seulement à l'entrée utilisateur.
 </Note>
 
-<Text>À traiter au minimum : prompt injection indirect, principe du moindre privilège, séparation données non fiables / instructions, gestion des secrets hors du contexte du modèle, effets de bord et opérations irréversibles, limites de sandbox, propagation d'instructions malveillantes entre agents, audit des actions réellement exécutées.</Text>
+<Text>Les sujets qui reviennent dans les guides de sécurité que j'ai consultés : prompt injection indirect, principe du moindre privilège, séparation données non fiables / instructions, gestion des secrets hors du contexte du modèle, effets de bord et opérations irréversibles, limites de sandbox, propagation d'instructions malveillantes entre agents, audit des actions réellement exécutées.</Text>
 
 <Title size={3}>Observabilité & provenance</Title>
 
-<Text>Un système multi-agents non tracé est impossible à déboguer. Il faut journaliser <strong class="text-text-secondary">les faits, pas le raisonnement interne</strong> du modèle : traces corrélées (identifiant de run propagé), outils appelés et leurs arguments, résultats observés, décisions prises et les critères objectifs qui les ont déclenchées, coûts et latences par étape, mouvements entre paliers.</Text>
+<Text>Sans traces, un système multi-agents devient vite très difficile à déboguer. La recommandation qui revient : journaliser <strong class="text-text-secondary">les faits, pas le raisonnement interne</strong> du modèle : traces corrélées (identifiant de run propagé), outils appelés et leurs arguments, résultats observés, décisions prises et les critères objectifs qui les ont déclenchées, coûts et latences par étape, mouvements entre paliers.</Text>
 
 <Text>Maintenir une information fiable à travers les agents est un problème à part entière. Un agent qui reçoit un résumé ne devrait pas être obligé de lui faire aveuglément confiance : il devrait pouvoir retrouver les éléments sources, identifier les informations périmées et distinguer les <strong class="text-text-secondary">faits observés</strong> des <strong class="text-text-secondary">hypothèses générées</strong>.</Text>
 
@@ -1071,7 +1073,7 @@ flowchart TD
 
 <SectionTitle>Évaluer &amp; <HighLight accent="green">décider</HighLight></SectionTitle>
 
-<Text>Un tableau « situation → pattern » saute directement du problème à la solution. Une démarche solide répond d'abord aux questions <strong class="text-text-secondary">dans l'ordre</strong> :</Text>
+<Text>Un tableau « situation → pattern » saute directement du problème à la solution. La démarche qui me paraît la plus saine consiste à répondre d'abord à ces questions, <strong class="text-text-secondary">dans l'ordre</strong> :</Text>
 
 <ol class="space-y-2 my-4 ml-6">
   <li class="flex items-start gap-3 text-text-muted text-[15px] leading-[1.8]">
@@ -1116,26 +1118,26 @@ flowchart TD
 
 <Text>Trois protocoles de comparaison répondent à trois questions différentes : <HighLight accent="cyan">budget comparable</HighLight> (à coût comparable, la qualité s'améliore-t-elle ?), <HighLight accent="green">qualité cible</HighLight> (quel coût minimal pour atteindre une qualité donnée ?) et <HighLight accent="purple">contraintes de service</HighLight> (latence, fiabilité, sécurité respectées ?).</Text>
 
-<Note title="Trois garanties méthodologiques" variant="warning">
+<Note title="Trois précautions méthodologiques" variant="warning">
   <strong class="text-text-secondary">1. Intervalles d'incertitude.</strong> Rapporter des intervalles de confiance, pas seulement des moyennes. <strong class="text-text-secondary">2. Trois jeux, trois rôles.</strong> Le jeu de test final doit être protégé de l'optimisation répétée, sinon on optimise le benchmark plutôt que le système. <strong class="text-text-secondary">3. Coût au résultat réussi.</strong> Le coût moyen par requête est trompeur : une architecture qui coûte moins cher mais échoue davantage peut coûter plus cher au final.
 </Note>
 
 <Title size={3}>Chiffres : ne pas confondre illustration et règle</Title>
 
-<Text>Plusieurs objectifs chiffrés circulent (« 95 % des requêtes dans une route connue », « coût divisé par 100 », « gains de vitesse 2-3× »). Ils peuvent être pertinents dans un contexte précis, mais <HighLight accent="red" bold>sans protocole de mesure ils ressemblent à des règles universelles</HighLight>. Pour chaque chiffre, indiquez la source, les modèles et versions comparés, la métrique, le budget de calcul, et les limites de généralisation. Sinon, remplacez par une formulation qualitative.</Text>
+<Text>Plusieurs objectifs chiffrés circulent (« 95 % des requêtes dans une route connue », « coût divisé par 100 », « gains de vitesse 2-3× »). Ils peuvent être pertinents dans un contexte précis, mais <HighLight accent="red" bold>sans protocole de mesure ils ressemblent à des règles universelles</HighLight>. Pour chaque chiffre, il faudrait idéalement connaître la source, les modèles et versions comparés, la métrique, le budget de calcul et les limites de généralisation. À défaut, mieux vaut s'en tenir à une formulation qualitative.</Text>
 
 <Title size={3}>Quand simplifier ou retirer un mécanisme</Title>
 
-<Text>Une architecture agentique doit rester <HighLight accent="green" bold>réversible</HighLight> : prévoyez dès la conception les critères qui conduiront à <strong class="text-text-secondary">retirer</strong> un mécanisme plutôt qu'à l'ajuster. Signaux de simplification : gain de qualité trop faible face à la baseline, coût au succès supérieur, latence excessive pour le contrat de service, branches inutilisées, complexité opérationnelle supérieure au bénéfice. Si deux mécanismes successifs n'apportent pas de gain démontrable l'un par rapport à l'autre, <strong class="text-text-secondary">fusionnez-les ou supprimez-en un</strong>. Revenir à un workflow plus simple n'est pas un échec : c'est le coût de contrôle assumé.</Text>
+<Text>Une architecture agentique gagne à rester <HighLight accent="green" bold>réversible</HighLight> : l'idée est de prévoir dès la conception les critères qui conduiront à <strong class="text-text-secondary">retirer</strong> un mécanisme plutôt qu'à l'ajuster. Signaux de simplification : gain de qualité trop faible face à la baseline, coût au succès supérieur, latence excessive pour le contrat de service, branches inutilisées, complexité opérationnelle supérieure au bénéfice. Si deux mécanismes successifs n'apportent pas de gain démontrable l'un par rapport à l'autre, <strong class="text-text-secondary">autant en fusionner ou en supprimer un</strong>. Revenir à un workflow plus simple n'est pas un échec : c'est le coût de contrôle assumé.</Text>
 
 <SectionHeader sectionId="synthese" label="10" />
 
 <SectionTitle>Synthèse : <HighLight accent="green">situation → mécanismes</HighLight></SectionTitle>
 
-<Text>Ce tableau est un <strong class="text-text-secondary">point de départ</strong>, pas une règle de décision. Utilisez la méthode de la section précédente pour un choix rigoureux.</Text>
+<Text>Ce tableau est un <strong class="text-text-secondary">point de départ</strong>, pas une règle de décision. Pour un vrai choix, la méthode de la section précédente reste plus fiable.</Text>
 
 <Table
-  headers={[{ label: 'Situation' }, { label: 'Mécanisme(s) recommandé(s)' }]}
+  headers={[{ label: 'Situation' }, { label: 'Mécanisme(s) à envisager' }]}
   rows={[
     ['Workflow linéaire strict, étapes prédéfinies', 'Sequential Chain'],
     ['Beaucoup de requêtes simples à trier', 'Router (± Model Cascade)'],
@@ -1156,8 +1158,8 @@ flowchart TD
   ]}
 />
 
-<Note title="Conseils de conception" variant="info">
-  <strong class="text-text-secondary">1.</strong> Commencez simple. <strong class="text-text-secondary">2.</strong> Les mécanismes se combinent. <strong class="text-text-secondary">3.</strong> Évaluez avant de complexifier, contre une baseline au même contrat. <strong class="text-text-secondary">4.</strong> Contrôlez coût et latence : les deux taxes du multi-agents. <strong class="text-text-secondary">5.</strong> Gardez des gates et des garde-fous. <strong class="text-text-secondary">6.</strong> Traitez la production dès la conception.
+<Note title="Ce que je retiens" variant="info">
+  <strong class="text-text-secondary">1.</strong> Commencer simple. <strong class="text-text-secondary">2.</strong> Garder en tête que les mécanismes se combinent. <strong class="text-text-secondary">3.</strong> Évaluer avant de complexifier, contre une baseline au même contrat. <strong class="text-text-secondary">4.</strong> Surveiller coût et latence : les deux taxes du multi-agents. <strong class="text-text-secondary">5.</strong> Garder des gates et des garde-fous. <strong class="text-text-secondary">6.</strong> Penser à la production dès la conception.
 </Note>
 
 <SectionHeader sectionId="conclusion" label="conclusion" />
@@ -1166,12 +1168,14 @@ flowchart TD
 
 <Text>Il n'existe pas de « meilleure » architecture multi-agents — seulement des <HighLight accent="cyan" bold>compromis</HighLight> : autonomie contre contrôle, coût contre qualité, parallélisme contre ordre, centralisation contre résilience.</Text>
 
-<Text>Le point le plus important de cet article est peut-être le plus simple : les vingt entrées du catalogue (le n°19 regroupant deux techniques distinctes) ne sont <HighLight accent="red" bold>pas vingt architectures entre lesquelles choisir</HighLight>, mais des <HighLight accent="green" bold>briques composables</HighLight> à positionner sur des axes de conception. Un catalogue permet de <em>nommer</em> des patterns ; une méthode permet de les <em>composer</em> et de <em>prouver</em> qu'ils apportent quelque chose.</Text>
+<Text>Ce que je retiens surtout de ce travail est peut-être le plus simple : les vingt entrées du catalogue (le n°19 regroupant deux techniques distinctes) ne sont <HighLight accent="red" bold>pas vingt architectures entre lesquelles choisir</HighLight>, mais des <HighLight accent="green" bold>briques composables</HighLight> à positionner sur des axes de conception. Un catalogue permet de <em>nommer</em> des patterns ; une méthode permet de les <em>composer</em> et de <em>prouver</em> qu'ils apportent quelque chose.</Text>
 
-<Text>Comprendre ces mécanismes — leurs topologies, leurs forces, mais aussi leurs <strong class="text-text-secondary">modes de défaillance</strong>, leurs <strong class="text-text-secondary">garanties réelles</strong> et la manière de <strong class="text-text-secondary">démontrer leur intérêt</strong> — est ce qui permet de concevoir, de justifier et d'exploiter une architecture pour un cas d'usage donné.</Text>
+<Text>Comprendre ces mécanismes — leurs topologies, leurs forces, mais aussi leurs <strong class="text-text-secondary">modes de défaillance</strong>, leurs <strong class="text-text-secondary">garanties réelles</strong> et la manière de <strong class="text-text-secondary">démontrer leur intérêt</strong> — me semble être ce qui permet de concevoir, de justifier et d'exploiter une architecture pour un cas d'usage donné.</Text>
+
+<Text>Je compléterai cet article au fil de mes expérimentations. Si vous avez mis ce genre de système en production et que certains points vous semblent faux ou naïfs, vos retours m'intéressent.</Text>
 
 <Note title="Message à emporter">
-  Commencez par un LLM bien prompté. Complexifiez seulement si un besoin mesurable le justifie, mesurez systématiquement contre une baseline au même contrat, et gardez votre architecture <HighLight accent="green" bold>réversible</HighLight> : savoir retirer un mécanisme est une compétence de conception à part entière.
+  Commencer par un LLM bien prompté. Ne complexifier que si un besoin mesurable le justifie, mesurer contre une baseline au même contrat, et garder l'architecture <HighLight accent="green" bold>réversible</HighLight> : savoir retirer un mécanisme semble être une compétence de conception à part entière.
 </Note>
 
 <Title size={3}>Références</Title>
