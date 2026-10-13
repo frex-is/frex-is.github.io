@@ -115,6 +115,10 @@ import orchestratorMain from '@/examples/orchestrator-worker/main.py?raw'
 import orchestratorSchemas from '@/examples/orchestrator-worker/schemas.py?raw'
 import orchestratorPrompts from '@/examples/orchestrator-worker/prompts.py?raw'
 import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
+import chainMain from '@/examples/sequential-chain/main.py?raw'
+import chainSchemas from '@/examples/sequential-chain/schemas.py?raw'
+import chainPrompts from '@/examples/sequential-chain/prompts.py?raw'
+import chainLlm from '@/examples/sequential-chain/llm.py?raw'
 
 
 <Note title="Article en cours de rédaction" variant="warning" class="mt-6">
@@ -404,6 +408,27 @@ sequenceDiagram
     A3-->>A4: Markdown formaté + métadonnées
     A4-->>U: Article publié sur le CMS
 ```
+
+<Text><strong class="text-text-primary">En code.</strong> Transformer les commits d'une release en annonce pour les utilisateurs. La chaîne passe progressivement du technique au grand public : un <HighLight accent="green">tri</HighLight> classe chaque commit (feature, fix ou interne), une étape de <HighLight accent="green">release notes</HighLight> rédige les nouveautés et corrections en ignorant l'interne, puis une étape d'<HighLight accent="green">annonce</HighLight> en tire un message court. Chaque étape a son propre prompt, son propre modèle, son propre effort et son propre format de sortie.</Text>
+
+```mermaid
+flowchart LR
+    C["Commits"] --> T["Tri<br/>Haiku · low"]
+    T -- "Triage" --> R["Release notes<br/>Sonnet · medium"]
+    R -- "ReleaseNotes" --> A["Annonce<br/>Haiku · low"]
+    A -- "Announcement" --> U["Utilisateurs"]
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: chainMain, description: "Config des trois étapes, commits mockés et la chaîne : chaque appel reçoit la sortie du précédent." },
+  { name: 'schemas.py', lang: 'python', code: chainSchemas, description: 'Les contrats entre les maillons : la sortie typée de chaque étape est l\'entrée de la suivante.' },
+  { name: 'prompts.py', lang: 'python', code: chainPrompts, description: 'Les prompts système des trois étapes.' },
+  { name: 'llm.py', lang: 'python', code: chainLlm, description: 'Le même appel LLM unique que pour l\'Orchestrator-Worker : un maillon de chaîne est une config comme une autre.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Le schéma est le contrat entre deux maillons</strong> : l'étape N+1 reçoit la sortie JSON de l'étape N, telle quelle. <strong class="text-text-secondary">Chaque maillon ne voit que son prédécesseur</strong> : les release notes ne voient jamais les commits bruts, l'annonce ne voit jamais le tri. L'exemple est volontairement placé dans le meilleur des mondes : pas de gate de qualité ni de gestion d'erreur. En production, un commit mal classé au tri se propagerait jusqu'à l'annonce sans qu'aucune étape ne s'en aperçoive.
+</Note>
 
 <DecisionCard accent="cyan" items={[
   { label: 'Problème résolu', value: 'Transformation séquentielle en étapes clairement identifiables.' },
