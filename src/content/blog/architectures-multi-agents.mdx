@@ -110,6 +110,11 @@ import MaturityBadge from '@components/articles/MaturityBadge.astro'
 import DecisionCard from '@components/articles/DecisionCard.astro'
 import MechanismCatalog from '@components/articles/MechanismCatalog.astro'
 import AxisGrid from '@components/articles/AxisGrid.astro'
+import CodeTabs from '@components/base/CodeTabs.astro'
+import orchestratorMain from '@/examples/orchestrator-worker/main.py?raw'
+import orchestratorSchemas from '@/examples/orchestrator-worker/schemas.py?raw'
+import orchestratorPrompts from '@/examples/orchestrator-worker/prompts.py?raw'
+import orchestratorLlm from '@/examples/orchestrator-worker/llm.py?raw'
 
 
 <Note title="Article en cours de rédaction" variant="warning" class="mt-6">
@@ -345,6 +350,19 @@ sequenceDiagram
 
 <Note variant="warning">
   L'agrégation est le point de fragilité : il faut des règles de <strong class="text-text-secondary">provenance</strong> (d'où vient l'information ?) et une gestion explicite des <strong class="text-text-secondary">contradictions</strong>. Un bon découpage isole aussi les tâches pour limiter la contamination contextuelle.
+</Note>
+
+<Text><strong class="text-text-primary">En code.</strong> Triage d'un backlog d'issues produit, mélangées et parfois en double. L'orchestrateur lit le backlog et décide seul du plan : <HighLight accent="cyan">quel worker</HighLight> traite quoi (bug, feature ou refacto), <HighLight accent="cyan">comment regrouper</HighLight> les doublons et <HighLight accent="cyan">combien</HighLight> de workers lancer. Chaque worker a son propre prompt, son propre modèle, son propre effort et son propre format de sortie. Implémentation réécrite à partir du <Link href="https://github.com/anthropics/claude-cookbooks/blob/main/patterns/agents/orchestrator_workers.ipynb">cookbook Anthropic</Link>.</Text>
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: orchestratorMain, description: "Config des agents, backlog mocké et orchestration : un appel à l'orchestrateur, puis les workers en parallèle." },
+  { name: 'schemas.py', lang: 'python', code: orchestratorSchemas, description: 'Les contrats de données : le plan produit par l\'orchestrateur et les sorties typées de chaque worker.' },
+  { name: 'prompts.py', lang: 'python', code: orchestratorPrompts, description: "Les prompts système de l'orchestrateur et des workers." },
+  { name: 'llm.py', lang: 'python', code: orchestratorLlm, description: 'L\'appel LLM unique via le SDK Anthropic : modèle, effort et schéma de sortie propres à chaque agent.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Le modèle décide, le code exécute</strong> : l'orchestrateur choisit un type de worker dans un Enum fermé, c'est le code qui l'associe à une config. <strong class="text-text-secondary">Isolation de contexte</strong> : un worker ne voit que ses issues et la consigne de l'orchestrateur, ce champ <code>instructions</code> est donc le seul canal entre les deux. Ici, pas d'agrégation : l'exemple s'arrête à la délégation pour ne montrer que le pattern.
 </Note>
 
 <DecisionCard accent="cyan" items={[

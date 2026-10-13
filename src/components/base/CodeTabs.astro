@@ -1,0 +1,120 @@
+---
+import { codeToHtml } from 'shiki'
+import { Icon } from 'astro-icon/components'
+
+export interface CodeFile {
+  name: string
+  code: string
+  lang?: string
+  description?: string
+}
+
+export interface Props {
+  files: CodeFile[]
+  title?: string
+}
+
+const { files, title } = Astro.props
+
+const panels = await Promise.all(
+  files.map(async (file) => {
+    const code = file.code.trim()
+    return {
+      ...file,
+      code,
+      lines: code.split('\n').length,
+      html: await codeToHtml(code, { lang: file.lang ?? 'text', theme: 'github-dark' }),
+    }
+  }),
+)
+---
+
+<div class="code-tabs group rounded-block border border-border bg-surface-card overflow-hidden my-6" data-code-tabs>
+  <div class="flex items-center justify-between gap-3 px-4 border-b border-border bg-surface/80">
+    <div class="flex items-center gap-3 min-w-0">
+      <Icon name="lucide:folder-code" class="shrink-0 size-[15px] text-accent-cyan" />
+      {title && <span class="hidden sm:inline shrink-0 text-[12px] font-semibold uppercase tracking-wider text-text-subtle">{title}</span>}
+      <div class="flex overflow-x-auto [scrollbar-width:none]" role="tablist">
+        {panels.map((panel, i) => (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={i === 0 ? 'true' : 'false'}
+            data-tab={i}
+            class="shrink-0 px-3 py-[10px] -mb-px border-b-2 font-mono text-[13px] whitespace-nowrap transition-colors border-transparent text-text-subtle hover:text-text-secondary aria-selected:border-accent-cyan aria-selected:text-accent-cyan"
+          >
+            {panel.name}
+          </button>
+        ))}
+      </div>
+    </div>
+    <button type="button" class="code-tabs-copy shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 text-text-subtle hover:text-text-secondary text-[13px]">
+      <Icon name="lucide:copy" class="size-[14px]" />
+      <span>Copy</span>
+    </button>
+  </div>
+
+  {panels.map((panel, i) => (
+    <div role="tabpanel" data-panel={i} data-code={panel.code} hidden={i !== 0}>
+      {panel.description && (
+        <p class="px-4 py-2 border-b border-border-subtle text-[13px] text-text-muted leading-[1.6]">{panel.description}</p>
+      )}
+      <div class="code-tabs-body relative max-h-[420px] overflow-auto [&_pre]:!bg-transparent [&_pre]:!p-4 [&_pre]:text-[13px] [&_pre]:leading-[1.7]" set:html={panel.html} />
+      <div class="flex items-center justify-between px-4 py-2 border-t border-border-subtle text-[12px] text-text-subtle">
+        <span class="font-mono">{panel.lines} lignes · {panel.lang ?? 'text'}</span>
+        <button type="button" class="code-tabs-expand flex items-center gap-1.5 hover:text-text-secondary transition-colors">
+          <Icon name="lucide:chevrons-up-down" class="size-[14px]" />
+          <span>Tout afficher</span>
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-code-tabs]').forEach((root) => {
+    const tabs = root.querySelectorAll<HTMLButtonElement>('[data-tab]')
+    const panels = root.querySelectorAll<HTMLElement>('[data-panel]')
+    let active = 0
+
+    const refreshExpandButtons = () => {
+      panels.forEach((panel) => {
+        const body = panel.querySelector<HTMLElement>('.code-tabs-body')!
+        const expand = panel.querySelector<HTMLElement>('.code-tabs-expand')!
+        if (panel.hidden || body.classList.contains('max-h-none')) return
+        expand.hidden = body.scrollHeight <= body.clientHeight
+      })
+    }
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => {
+        active = i
+        tabs.forEach((t, j) => t.setAttribute('aria-selected', String(j === i)))
+        panels.forEach((p, j) => (p.hidden = j !== i))
+        refreshExpandButtons()
+      })
+    })
+
+    panels.forEach((panel) => {
+      const body = panel.querySelector<HTMLElement>('.code-tabs-body')!
+      const expand = panel.querySelector<HTMLElement>('.code-tabs-expand')!
+      const label = expand.querySelector('span')!
+      expand.addEventListener('click', () => {
+        const expanded = body.classList.toggle('max-h-none')
+        body.classList.toggle('max-h-[420px]', !expanded)
+        label.textContent = expanded ? 'Réduire' : 'Tout afficher'
+        if (!expanded) root.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      })
+    })
+
+    const copy = root.querySelector<HTMLButtonElement>('.code-tabs-copy')!
+    const copyLabel = copy.querySelector('span')!
+    copy.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(panels[active].dataset.code ?? '')
+      copyLabel.textContent = 'Copied!'
+      setTimeout(() => (copyLabel.textContent = 'Copy'), 2000)
+    })
+
+    refreshExpandButtons()
+  })
+</script>
