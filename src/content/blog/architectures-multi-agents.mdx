@@ -119,6 +119,18 @@ import chainMain from '@/examples/sequential-chain/main.py?raw'
 import chainSchemas from '@/examples/sequential-chain/schemas.py?raw'
 import chainPrompts from '@/examples/sequential-chain/prompts.py?raw'
 import chainLlm from '@/examples/sequential-chain/llm.py?raw'
+import routerMain from '@/examples/router/main.py?raw'
+import routerSchemas from '@/examples/router/schemas.py?raw'
+import routerPrompts from '@/examples/router/prompts.py?raw'
+import routerLlm from '@/examples/router/llm.py?raw'
+import parallelMain from '@/examples/parallel-branching/main.py?raw'
+import parallelSchemas from '@/examples/parallel-branching/schemas.py?raw'
+import parallelPrompts from '@/examples/parallel-branching/prompts.py?raw'
+import parallelLlm from '@/examples/parallel-branching/llm.py?raw'
+import treeMain from '@/examples/hierarchical-tree/main.py?raw'
+import treeSchemas from '@/examples/hierarchical-tree/schemas.py?raw'
+import treePrompts from '@/examples/hierarchical-tree/prompts.py?raw'
+import treeLlm from '@/examples/hierarchical-tree/llm.py?raw'
 
 
 <Note title="Article en cours de rédaction" variant="warning" class="mt-6">
@@ -466,6 +478,29 @@ flowchart TD
   Viser des catégories <em>disjointes et exhaustives</em> en langage naturel semble illusoire : une requête peut relever de deux domaines à la fois (« facturation » <strong class="text-text-secondary">et</strong> « incident technique »). D'où l'intérêt d'une <HighLight accent="yellow">route de repli explicite</HighLight> (clarification, transfert humain) et d'un seuil de confiance calibré sur un jeu de validation.
 </Note>
 
+<Text><strong class="text-text-primary">En code.</strong> Aiguiller des questions de développeurs selon leur difficulté. Un <HighLight accent="cyan">classifieur</HighLight> léger pose une étiquette sur chaque question sans y répondre, puis le code l'envoie vers <HighLight accent="cyan">un seul expert</HighLight> dimensionné pour elle : une réponse rapide, un diagnostic de bug ou une proposition d'architecture. Les questions trop vagues prennent la <HighLight accent="yellow">route de repli</HighLight> : aucun LLM, un humain. Chaque expert a son propre prompt, son propre modèle, son propre effort et son propre format de sortie.</Text>
+
+```mermaid
+flowchart TD
+    Q["Question"] --> C["Classifieur<br/>Haiku · low"]
+    C -- "Difficulty" --> R{"Aiguillage<br/>match (code)"}
+    R -->|"simple"| S["Réponse rapide<br/>Haiku · low"]
+    R -->|"medium"| D["Diagnostic<br/>Sonnet · medium"]
+    R -->|"complex"| A["Architecte<br/>Opus · high"]
+    R -->|"unclear"| H["Transfert humain<br/>(pas de LLM)"]
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: routerMain, description: "Config du classifieur et des experts, questions mockées et le routage : un appel au classifieur, puis un match vers une seule route." },
+  { name: 'schemas.py', lang: 'python', code: routerSchemas, description: "L'étiquette du classifieur (un Enum fermé) et la sortie typée de chaque expert." },
+  { name: 'prompts.py', lang: 'python', code: routerPrompts, description: 'Le prompt du classifieur et ceux des trois experts.' },
+  { name: 'llm.py', lang: 'python', code: routerLlm, description: 'Le même appel LLM unique que pour les patterns précédents : classifieur et experts sont des configs comme les autres.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Routeur = classifieur + aiguillage</strong> : le LLM rend une étiquette dans un Enum fermé, c'est le <code>match</code> du code qui choisit l'expert. <strong class="text-text-secondary">Le classifieur ne parle jamais à l'expert</strong> : l'expert reçoit la question brute, contrairement aux workers de l'orchestrateur qui reçoivent des consignes rédigées. <strong class="text-text-secondary">Une route n'est pas forcément un agent</strong> : <code>unclear</code> part chez un humain. L'exemple est volontairement placé dans le meilleur des mondes : pas de seuil de confiance calibré ni de gestion d'erreur. En production, une question complexe envoyée à Haiku donnerait une réponse médiocre sans aucune erreur visible.
+</Note>
+
 <DecisionCard accent="cyan" items={[
   { label: 'Problème résolu', value: 'Volume élevé de requêtes hétérogènes à trier avant traitement.' },
   { label: "Quand l'employer", value: 'Les catégories sont stables et les routes ont des coûts ou qualités différents.' },
@@ -498,6 +533,32 @@ flowchart TD
 ```
 
 <Text><strong class="text-text-primary">Exemple concret.</strong> Un avocat dépose 40 contrats fournisseurs ; le système les traite par lots en parallèle, chaque worker extrait les clauses de responsabilité, délais et pénalités, puis une synthèse produit un tableau comparatif et signale les clauses atypiques.</Text>
+
+<Text><strong class="text-text-primary">En code.</strong> Traduire les textes d'interface d'une application e-commerce du français vers trois langues, variante <em>sectioning</em>. Le <HighLight accent="cyan">fan-out</HighLight> est écrit en dur : toujours les mêmes trois langues, et <strong class="text-text-secondary">la même</strong> config de traducteur lancée trois fois en parallèle, seule la langue cible change. Le <HighLight accent="cyan">fan-in</HighLight> n'est pas un agent : une ligne de code regroupe les sorties, puis un check déterministe vérifie que les placeholders comme <code>{'{count}'}</code> ont survécu à la traduction.</Text>
+
+```mermaid
+flowchart TD
+    S["Textes fr"] --> FO["Fan-out<br/>asyncio.gather (code)"]
+    FO --> EN["Traducteur → en<br/>Haiku · low"]
+    FO --> ES["Traducteur → es<br/>Haiku · low"]
+    FO --> DE["Traducteur → de<br/>Haiku · low"]
+    EN --> FI["Fan-in<br/>fan_in() (code)"]
+    ES --> FI
+    DE --> FI
+    FI --> C["check_placeholders()<br/>(code)"]
+    C --> R["Catalogue + erreurs de placeholders"]
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: parallelMain, description: "Config du traducteur, textes mockés, fan-out sur une liste fixe de langues, puis fan-in et check des placeholders en code." },
+  { name: 'schemas.py', lang: 'python', code: parallelSchemas, description: "Les langues, la sortie d'une branche et le format d'une erreur de placeholder." },
+  { name: 'prompts.py', lang: 'python', code: parallelPrompts, description: 'Un seul prompt, commun aux trois branches.' },
+  { name: 'llm.py', lang: 'python', code: parallelLlm, description: 'Le même appel LLM unique que pour les patterns précédents : une branche est une config comme une autre.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Personne ne planifie</strong> : contrairement à l'orchestrateur, aucun LLM ne décide du découpage, le nombre de branches est fixé dans le code. <strong class="text-text-secondary">Les branches sont indépendantes</strong> : chaque traducteur ne voit que la source et sa langue cible, jamais le travail des autres. <strong class="text-text-secondary">Le fan-in peut être du code</strong> : déterministe et gratuit, un LLM n'est utile que s'il faut juger ou fusionner. L'exemple est volontairement placé dans le meilleur des mondes : pas de gestion des échecs partiels ni des rate limits. En production, avec <code>asyncio.gather</code>, une seule branche qui plante fait échouer les trois langues.
+</Note>
 
 <DecisionCard accent="cyan" items={[
   { label: 'Problème résolu', value: 'Traiter plusieurs éléments indépendants à la fois, ou produire plusieurs variantes.' },
@@ -536,6 +597,37 @@ flowchart TD
 
 <Note variant="warning">
   Risque de <strong class="text-text-secondary">dérive d'information</strong> : chaque compression entre niveaux peut perdre du détail. Les contrats inter-niveaux (rapports, formats) doivent être stables.
+</Note>
+
+<Text><strong class="text-text-primary">En code.</strong> Décider du go / no-go du lancement d'une feature. L'organigramme est <HighLight accent="green">fixé dans le code</HighLight> : un Head of Product, deux managers (Tech, Marketing) et quatre workers. À la <HighLight accent="green">descente</HighLight>, chaque manager rédige une consigne par subordonné ; seuls les workers connaissent les faits du terrain. À la <HighLight accent="green">remontée</HighLight>, chaque manager résume les rapports de son équipe, jusqu'à une décision au sommet. Le modèle baisse en descendant : une décision lourde en haut, des feuilles nombreuses et simples en bas.</Text>
+
+```mermaid
+flowchart TD
+    M["Mission"] --> HP["Head of Product · plan<br/>Opus · high"]
+    HP -- "ProductOrders.tech" --> TP["Manager Tech · plan<br/>Sonnet · medium"]
+    HP -- "ProductOrders.marketing" --> MP["Manager Marketing · plan<br/>Sonnet · medium"]
+    TP -- "TechOrders.backend" --> B["Backend<br/>Haiku · low"]
+    TP -- "TechOrders.frontend" --> F["Frontend<br/>Haiku · low"]
+    MP -- "MarketingOrders.email" --> E["Email<br/>Haiku · low"]
+    MP -- "MarketingOrders.doc" --> D["Doc<br/>Haiku · low"]
+    B -- "Report" --> TS["Manager Tech · synthèse"]
+    F -- "Report" --> TS
+    E -- "Report" --> MS["Manager Marketing · synthèse"]
+    D -- "Report" --> MS
+    TS -- "Report" --> HD["Head of Product · décision"]
+    MS -- "Report" --> HD
+    HD --> R["LaunchDecision"]
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: treeMain, description: "L'organigramme, la mission et les connaissances mockées, et une seule fonction récursive qui parcourt tout l'arbre." },
+  { name: 'schemas.py', lang: 'python', code: treeSchemas, description: "Les ordres de chaque manager (un champ par subordonné), le rapport commun à tous les niveaux et la décision finale." },
+  { name: 'prompts.py', lang: 'python', code: treePrompts, description: 'Les prompts des trois niveaux : plan et synthèse pour chaque manager, un prompt par worker.' },
+  { name: 'llm.py', lang: 'python', code: treeLlm, description: 'Le même appel LLM unique que pour les patterns précédents : managers et workers sont des configs comme les autres.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Le code garde la structure, le LLM écrit le contenu</strong> : un champ par subordonné dans le schéma d'ordres garantit que chacun reçoit exactement une consigne, sans oubli ni subordonné inventé. <strong class="text-text-secondary">Un manager est un worker pour son chef</strong> : il reçoit une mission et rend un <code>Report</code>, d'où une seule fonction <code>run</code> récursive. <strong class="text-text-secondary">La remontée compresse</strong> : dans les logs, on peut suivre ce qu'il reste du « 80 000 factures, pas de pagination » du Backend une fois arrivé au Head of Product. L'exemple est volontairement placé dans le meilleur des mondes : pas de gestion des branches en panne ni de mesure de la perte d'information. En production, un risque bloquant d'une feuille pourrait disparaître dans un résumé sans que personne ne s'en aperçoive.
 </Note>
 
 <DecisionCard accent="cyan" items={[
