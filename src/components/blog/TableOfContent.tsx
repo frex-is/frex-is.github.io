@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useActiveHeading } from '@hooks/useActiveHeadings.ts'
 
 interface TableContentItem {
@@ -79,11 +80,28 @@ export default function TableOfContent({
   collectIds(items)
 
   const activeId = useActiveHeading(ids)
+  const containerRef = useRef<HTMLElement>(null)
+
+  // Keep the active entry centered in the TOC's own scroll area, without scrolling the page
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container || !activeId) return
+
+    const link = container.querySelector<HTMLElement>(`a[href="#${CSS.escape(activeId)}"]`)
+    if (!link) return
+
+    const containerRect = container.getBoundingClientRect()
+    const linkRect = link.getBoundingClientRect()
+    const offset = linkRect.top - containerRect.top - (container.clientHeight - linkRect.height) / 2
+
+    container.scrollBy({ top: offset, behavior: 'smooth' })
+  }, [activeId])
 
   if (items.length === 0) return null
 
   return (
     <aside
+      ref={containerRef}
       className="w-[240px] shrink-0 sticky top-20 h-fit max-h-[calc(100vh-120px)] overflow-y-auto px-4 py-6 border-l border-border hidden lg:block"
       aria-label="Table des matières"
     >

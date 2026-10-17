@@ -17,8 +17,8 @@ const { title = SITE.title } = Astro.props
     <title>{title}</title>
   </head>
 
-  <body class="bg-surface text-text-primary font-sans antialiased overflow-x-hidden">
-    <main class="overflow-x-hidden">
+  <body class="bg-surface text-text-primary font-sans antialiased overflow-x-clip">
+    <main class="overflow-x-clip">
       <slot />
     </main>
   </body>
