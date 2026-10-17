@@ -135,6 +135,19 @@ import allocationMain from '@/examples/dynamic-task-allocation/main.py?raw'
 import allocationSchemas from '@/examples/dynamic-task-allocation/schemas.py?raw'
 import allocationPrompts from '@/examples/dynamic-task-allocation/prompts.py?raw'
 import allocationLlm from '@/examples/dynamic-task-allocation/llm.py?raw'
+import peerMain from '@/examples/peer-to-peer/main.py?raw'
+import peerSchemas from '@/examples/peer-to-peer/schemas.py?raw'
+import peerPrompts from '@/examples/peer-to-peer/prompts.py?raw'
+import peerLlm from '@/examples/peer-to-peer/llm.py?raw'
+import blackboardMain from '@/examples/blackboard/main.py?raw'
+import blackboardSchemas from '@/examples/blackboard/schemas.py?raw'
+import blackboardPrompts from '@/examples/blackboard/prompts.py?raw'
+import blackboardLlm from '@/examples/blackboard/llm.py?raw'
+import busMain from '@/examples/message-bus/main.py?raw'
+import busBus from '@/examples/message-bus/bus.py?raw'
+import busSchemas from '@/examples/message-bus/schemas.py?raw'
+import busPrompts from '@/examples/message-bus/prompts.py?raw'
+import busLlm from '@/examples/message-bus/llm.py?raw'
 
 
 <Note title="Article en cours de rédaction" variant="warning" class="mt-6">
@@ -696,12 +709,61 @@ flowchart LR
     N3 <-->|"partage de contexte"| N1
 ```
 
+<Text><strong class="text-text-primary">En code.</strong> Un client négocie le développement d'un export CSV de factures avec un freelance. Chaque pair a un <HighLight accent="purple">état privé</HighLight> injecté dans son prompt : le budget et le délai du client, le prix plancher et la disponibilité du freelance. Personne ne distribue la parole : chaque message désigne lui-même son <HighLight accent="purple">destinataire</HighLight> (<code>to</code>), et le code se contente de le livrer. Le freelance peut consulter en coulisses un développeur senior que le client ne voit pas ; ses contacts possibles sont fixés par son schéma. La négociation s'arrête quand un négociateur passe <code>status</code> à <code>accepted</code> ou <code>rejected</code>, ou au bout de <code>MAX_TURNS</code>.</Text>
+
+```mermaid
+flowchart LR
+    C["Client<br/>Haiku · low<br/>budget · délai (privés)"] <-->|"ClientMessage / FreelanceMessage"| F["Freelance<br/>Haiku · low<br/>plancher · dispo (privés)"]
+    F <-->|"FreelanceMessage / SeniorMessage"| S["Senior<br/>Sonnet · medium"]
+    C -. "ne se connaissent pas" .- S
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: peerMain, description: "Les pairs et leurs états privés, la livraison d'un message dans l'historique des deux pairs concernés et la boucle bornée par MAX_TURNS." },
+  { name: 'schemas.py', lang: 'python', code: peerSchemas, description: "Les pairs, les contacts autorisés de chacun (un enum par pair), le statut de la négociation et les messages." },
+  { name: 'prompts.py', lang: 'python', code: peerPrompts, description: "Un bloc commun pour lire l'historique et clore la négociation, puis le prompt de chaque pair." },
+  { name: 'llm.py', lang: 'python', code: peerLlm, description: 'Le même appel LLM unique que pour les patterns précédents : chaque pair est une config comme les autres.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Le LLM choisit à qui parler, le schéma borne qui il peut joindre</strong> : le client ne peut écrire qu'au freelance, le senior ne connaît que le freelance. Le routage est émergent, mais l'annuaire est en code. <strong class="text-text-secondary">Chaque pair n'a que son historique</strong> : le client ne voit jamais l'échange avec le senior. <strong class="text-text-secondary">La convergence n'est pas garantie</strong> : sans la consigne « pas de demain » dans les prompts, un premier run est resté bloqué sur un accord « de principe » jamais conclu, alors que les zones d'accord se recoupaient. <code>MAX_TURNS</code> est le seul garde-fou. L'exemple est volontairement placé dans le meilleur des mondes : pas de vérification que les pairs respectent leurs contraintes privées, ni de détection d'une négociation qui tourne en rond.
+</Note>
+
 <div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
   <MaturityBadge level="Exploratoire" />
   <Title size={3}>Blackboard</Title>
 </div>
 
 <Text>Tous les agents lisent et écrivent dans un espace d'état central partagé ; un contrôleur sélectionne l'agent compétent pour traiter les données « mûres ». C'est une mémoire partagée + contrôle opportuniste : l'ordre des étapes n'est pas connu à l'avance. Nuance décisive : partager un état ne garantit <HighLight accent="red" bold>ni consensus ni convergence</HighLight>. Il faut définir des règles de conflit, des versions et des conditions d'arrêt.</Text>
+
+<Text><strong class="text-text-primary">En code.</strong> Enquêter sur un crash au paiement sur iPhone depuis la v2.3. Le tableau est un dossier d'enquête : le symptôme, des hypothèses (<code>open</code>, <code>confirmed</code>, <code>refuted</code>) signées par leur auteur, puis une conclusion. Le <HighLight accent="purple">contrôleur est du code</HighLight> : à chaque tour, il évalue une condition par agent et prend le premier prêt, dans un ordre de priorité fixe. Les développeurs frontend et backend proposent chacun une hypothèse à partir de ce qu'ils savent de la v2.3, un SRE la confronte aux logs de production mockés, et un lead technique conclut. Les agents qui proposent ne voient pas les preuves, et celui qui a les preuves ne propose pas.</Text>
+
+```mermaid
+flowchart TD
+    B[("Board<br/>symptôme · hypothèses · conclusion · version")]
+    C{"Contrôleur (code)<br/>premier agent prêt"}
+    B -- "lu" --> C
+    C --> R["REPORTER<br/>Haiku · low"]
+    C --> V["VERIFIER<br/>Sonnet · medium"]
+    C --> F["FRONTEND<br/>Haiku · low"]
+    C --> K["BACKEND<br/>Haiku · low"]
+    R -- "Conclusion" --> W["write()<br/>recopie · signe · version += 1"]
+    V -- "Verdict" --> W
+    F -- "Hypothesis" --> W
+    K -- "Hypothesis" --> W
+    W --> B
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: blackboardMain, description: "Les agents, les connaissances et les logs mockés, une condition de déclenchement par agent, write() et la boucle du contrôleur." },
+  { name: 'schemas.py', lang: 'python', code: blackboardSchemas, description: "Le tableau (symptôme, hypothèses signées et versionnées, conclusion) et la sortie de chaque agent." },
+  { name: 'prompts.py', lang: 'python', code: blackboardPrompts, description: "Un bloc commun qui décrit le tableau, puis le prompt de chaque agent." },
+  { name: 'llm.py', lang: 'python', code: blackboardLlm, description: 'Le même appel LLM unique que pour les patterns précédents : chaque contributeur est une config comme les autres.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Le tableau est le seul canal</strong> : aucun agent ne connaît les autres, il lit le tableau et rend une sortie structurée. <strong class="text-text-secondary">Le contrôleur ne suit pas de plan</strong> : la priorité est fixe, l'ordre d'exécution ne l'est pas. Si la première hypothèse (front) est réfutée, le backend entre en jeu ; sinon, il ne parle jamais. <strong class="text-text-secondary">Un seul écrivain</strong> : c'est <code>write()</code> qui recopie, signe et incrémente <code>version</code> ; comme un seul agent tourne par tour, il n'y a pas de conflit d'écriture. <strong class="text-text-secondary">Trois façons de s'arrêter</strong> : une conclusion, plus aucun agent prêt, ou <code>MAX_STEPS</code>. L'exemple est volontairement placé dans le meilleur des mondes : pas d'écritures concurrentes ni de vérification indépendante du verdict. En production, un faux <code>confirmed</code> clôturerait l'enquête sur une mauvaise cause.
+</Note>
 
 <div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
   <MaturityBadge level="Éprouvé" />
@@ -725,6 +787,32 @@ sequenceDiagram
     B-->>C3: Livre
     C3-->>C3: Notifie l'opérateur
 ```
+
+<Text><strong class="text-text-primary">En code.</strong> Traiter un flux de quatre alertes de production, publiées une toutes les 0,5 s juste après le déploiement de la v2.3. Le bus est un simple objet en mémoire : une <HighLight accent="green">file par abonné</HighLight>, et chaque <HighLight accent="green">topic</HighLight> a son contrat, vérifié à la publication. Un conseiller propose une première vérification pour chaque alerte ; un détecteur décide si les alertes reçues confirment un incident et ne publie <code>incident.opened</code> que dans ce cas ; un rédacteur écrit alors le message de la page de statut. Un logger en code écoute tous les topics, sans que personne ne le sache.</Text>
+
+```mermaid
+flowchart LR
+    M["Monitoring (code)"] -- "alert.fired" --> B[("Bus")]
+    B -- "alert.fired" --> R["DIAGNOSTIC_ADVISOR<br/>Haiku · low"]
+    B -- "alert.fired" --> C["INCIDENT_DETECTOR<br/>Sonnet · medium"]
+    R -- "runbook.suggested" --> B
+    C -- "incident.opened" --> B
+    B -- "incident.opened" --> S["PUBLIC_COMMUNICATOR<br/>Haiku · low"]
+    S -- "status.published" --> B
+    B -. "tous les topics" .-> A["EVENT_LOGGER (code)"]
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: busMain, description: "Les agents, les alertes mockées, le producteur, une coroutine par abonné et main(), qui attend que le flux soit traité." },
+  { name: 'bus.py', lang: 'python', code: busBus, description: "Le bus en mémoire : abonnement, publication contrôlée par contrat, drain() et l'itérateur listen()." },
+  { name: 'schemas.py', lang: 'python', code: busSchemas, description: "Les topics et leurs contrats d'événements, séparés des sorties des agents." },
+  { name: 'prompts.py', lang: 'python', code: busPrompts, description: "Un bloc commun qui décrit la situation d'un abonné, puis le prompt de chaque agent." },
+  { name: 'llm.py', lang: 'python', code: busLlm, description: 'Le même appel LLM unique que pour les patterns précédents : chaque abonné est une config comme les autres.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Personne ne se connaît</strong> : un abonné ne connaît que des topics, et <code>bus.py</code> ne connaît aucun agent. <strong class="text-text-secondary">Le couplage est déplacé vers les contrats</strong> : <code>CONTRACTS</code> associe un schéma à chaque topic, et renommer un champ d'<code>AlertFired</code> casse les abonnés, alors qu'aucun ne connaît le monitoring. <strong class="text-text-secondary">Un ordre par abonné, pas d'ordre global</strong> : chaque abonné lit sa file dans l'ordre, ce qui permet au détecteur de garder sa mémoire en variables locales, mais l'ordre de la trace change d'un run à l'autre. L'exemple est volontairement placé dans le meilleur des mondes : livraison au plus une fois, sans rétention, sans reprise ni dédoublonnage. En production, une alerte rejouée par un broker <em>at-least-once</em> ouvrirait un second incident si le détecteur n'ignorait pas les <code>message_identifier</code> déjà vus.
+</Note>
 
 <DecisionCard accent="pink" title="Fiche — Message Bus" items={[
   { label: 'Problème résolu', value: 'Traitement continu de flux d\'événements avec découplage temporel et opérationnel des producteurs et consommateurs.' },
