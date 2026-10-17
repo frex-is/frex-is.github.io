@@ -131,6 +131,10 @@ import treeMain from '@/examples/hierarchical-tree/main.py?raw'
 import treeSchemas from '@/examples/hierarchical-tree/schemas.py?raw'
 import treePrompts from '@/examples/hierarchical-tree/prompts.py?raw'
 import treeLlm from '@/examples/hierarchical-tree/llm.py?raw'
+import allocationMain from '@/examples/dynamic-task-allocation/main.py?raw'
+import allocationSchemas from '@/examples/dynamic-task-allocation/schemas.py?raw'
+import allocationPrompts from '@/examples/dynamic-task-allocation/prompts.py?raw'
+import allocationLlm from '@/examples/dynamic-task-allocation/llm.py?raw'
 
 
 <Note title="Article en cours de rédaction" variant="warning" class="mt-6">
@@ -652,6 +656,31 @@ flowchart TD
 </div>
 
 <Text>Les tâches sont déposées dans un pool central ; chaque agent évalue ses capacités et se porte candidat par une « enchère ». Des travaux récents (<HighLight accent="cyan">AgentLance</HighLight>, <HighLight accent="cyan">Agora</HighLight>) étudient réellement ce mécanisme — mais passer de « des recherches explorent ce mécanisme » à « c'est prêt pour la production » est un <HighLight accent="red" bold>saut non démontré</HighLight>. Une enchère n'a de sens que si les agents ont des compétences ou des coûts réellement différents, si l'on dispose de mesures de performance fiables, et si le coût de l'enchère est inférieur au bénéfice de l'allocation. <strong class="text-text-secondary">Mon intuition à ce stade : une simple file de tâches avec des workers spécialisés devrait suffire dans la grande majorité des cas.</strong></Text>
+
+<Text><strong class="text-text-primary">En code.</strong> Répartir un pool de quatre issues entre trois développeurs de niveaux différents : un junior, un senior et un expert, chacun avec son modèle, son taux horaire et sa <HighLight accent="cyan">capacité</HighLight> (le nombre d'issues qu'il peut prendre). Chaque agent voit tout le pool et rend une <HighLight accent="cyan">offre par issue</HighLight> : les heures qu'il lui faudrait à son niveau, multipliées par son taux. L'<HighLight accent="cyan">attribution</HighLight> n'est pas un agent : le code trie les offres de la moins chère à la plus chère et attribue chaque issue tant que le gagnant a de la capacité. Le même agent intervient deux fois, avec deux prompts : il enchérit, puis traite les issues qu'il a remportées.</Text>
+
+```mermaid
+flowchart TD
+    P["Pool d'issues"] --> J["Junior · enchère<br/>Haiku · low"]
+    P --> S["Senior · enchère<br/>Sonnet · medium"]
+    P --> E["Expert · enchère<br/>Opus · high"]
+    J -- "BidSheet" --> A["allocate()<br/>moins cher d'abord + capacité (code)"]
+    S -- "BidSheet" --> A
+    E -- "BidSheet" --> A
+    A -- "issue → gagnant" --> W["Gagnant · résolution<br/>config de l'agent"]
+    W --> R["Resolution par issue"]
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: allocationMain, description: "Les agents (modèle, taux, capacité), le pool d'issues mocké, l'enchère en parallèle, l'attribution en code puis la résolution par les gagnants." },
+  { name: 'schemas.py', lang: 'python', code: allocationSchemas, description: "Une issue, une offre (prix et justification), la feuille d'offres d'un agent et la résolution livrée." },
+  { name: 'prompts.py', lang: 'python', code: allocationPrompts, description: "Le prompt d'enchère et celui de résolution, paramétrés par le niveau de l'agent." },
+  { name: 'llm.py', lang: 'python', code: allocationLlm, description: "Le même appel LLM unique que pour les patterns précédents : enchérisseurs et solveurs sont des configs comme les autres." },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Le LLM chiffre, le code attribue</strong> : aucun agent ne décide qui prend quoi, il ne fait qu'annoncer un prix. <strong class="text-text-secondary">La capacité force la répartition</strong> : sans elle, le moins cher remporterait tout le pool, quelle que soit la difficulté des issues. <strong class="text-text-secondary">Le prix est auto-déclaré</strong> : rien ne vérifie qu'un junior estime honnêtement le temps qu'il lui faut sur un refacto de 1200 lignes. L'exemple est volontairement placé dans le meilleur des mondes : pas de gestion des issues sans preneur ni de comparaison entre le prix annoncé et la qualité livrée. En production, un agent qui sous-estime systématiquement remporterait les enchères sans que personne ne mesure ce qu'il livre.
+</Note>
 
 <div class="mb-4 flex flex-wrap items-center gap-2.5 sm:gap-3 [&>div]:mb-0">
   <MaturityBadge level="Exploratoire" />
