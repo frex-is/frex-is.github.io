@@ -152,6 +152,10 @@ import evaluatorMain from '@/examples/evaluator-optimizer/main.py?raw'
 import evaluatorSchemas from '@/examples/evaluator-optimizer/schemas.py?raw'
 import evaluatorPrompts from '@/examples/evaluator-optimizer/prompts.py?raw'
 import evaluatorLlm from '@/examples/evaluator-optimizer/llm.py?raw'
+import votingMain from '@/examples/majority-voting/main.py?raw'
+import votingSchemas from '@/examples/majority-voting/schemas.py?raw'
+import votingPrompts from '@/examples/majority-voting/prompts.py?raw'
+import votingLlm from '@/examples/majority-voting/llm.py?raw'
 
 
 <Note title="Article en cours de rédaction" variant="warning" class="mt-6">
@@ -924,6 +928,34 @@ flowchart TD
 
 <Note variant="warning">
   Pour établir un <strong class="text-text-secondary">fait</strong>, confronter les réponses à des sources, des tests ou des outils indépendants est souvent plus pertinent que compter les voix. Le vote semble surtout utile quand il n'existe pas de vérificateur externe <strong class="text-text-secondary">et</strong> que les erreurs ne sont pas corrélées.
+</Note>
+
+<Text><strong class="text-text-primary">En code.</strong> Donner une priorité (<code>P0</code> → <code>P3</code>) à trois bug reports mockés : une tâche de <HighLight accent="green">jugement</HighLight>, qu'aucun test ni aucune source ne peut trancher. Le même ticket part <HighLight accent="green">en parallèle</HighLight> vers quatre votants diversifiés : trois angles (support, SRE, product) en Haiku, plus un votant neutre en Sonnet, tous avec la même échelle de priorité pour que le désaccord porte sur le jugement, pas sur le vocabulaire. Le dépouillement est du <HighLight accent="green">code</HighLight> : un <code>Counter</code> et un seuil, <code>MIN_AGREEING_VOTES</code>. Les tickets sont pensés pour montrer les trois issues : unanimité (paiement en panne), majorité (export lent mais qui aboutit) et divergence (un seul compte touché, mais 20 % du chiffre d'affaires), qui part en <HighLight accent="yellow">escalade au lead</HighLight> avec les quatre votes et leurs raisons.</Text>
+
+```mermaid
+flowchart TD
+    T["Ticket"] --> FO["collect_votes()<br/>asyncio.gather (code)"]
+    FO --> S["SUPPORT<br/>Haiku · low"]
+    FO --> R["SRE<br/>Haiku · low"]
+    FO --> P["PRODUCT<br/>Haiku · low"]
+    FO --> N["NEUTRAL<br/>Sonnet · medium"]
+    S -- "Vote" --> V{"count_votes()<br/>Counter (code)"}
+    R -- "Vote" --> V
+    P -- "Vote" --> V
+    N -- "Vote" --> V
+    V -- "≥ MIN_AGREEING_VOTES" --> OK["Priorité retenue"]
+    V -- "sinon" --> H["Escalade au lead<br/>+ les 4 votes et leurs raisons"]
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: votingMain, description: "La config des quatre votants, les tickets mockés, la collecte parallèle (collect_votes), le dépouillement (count_votes) et l'escalade." },
+  { name: 'schemas.py', lang: 'python', code: votingSchemas, description: "Le domaine (Priority, Voter, Ticket), la sortie d'un votant (Vote) et le résultat du dépouillement (Verdict, Outcome)." },
+  { name: 'prompts.py', lang: 'python', code: votingPrompts, description: "L'échelle de priorité commune et l'angle propre à chaque votant." },
+  { name: 'llm.py', lang: 'python', code: votingLlm, description: "Le même appel LLM unique que pour les patterns précédents : chaque votant n'est qu'une config de plus." },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Le vote est du code</strong> : aucun LLM ne voit les autres votes ni ne décide du résultat. <strong class="text-text-secondary">L'indépendance est structurelle</strong> : <code>collect_votes()</code> envoie le même message aux quatre votants en parallèle, aucun ne peut lire la réponse d'un autre. C'est le fan-out du Parallel Branching, mais le fan-in <strong class="text-text-secondary">compare</strong> les sorties au lieu de les assembler. <strong class="text-text-secondary">L'escalade fait partie du pattern</strong> : sous le seuil, le système ne choisit pas « le moins pire ». Et la limite reste entière : trois votants partagent le même modèle et tous lisent le même ticket ; si le ticket est trompeur, ils peuvent se tromper ensemble et afficher un 4/4 rassurant. L'exemple est volontairement placé dans le meilleur des mondes : en production, il faudrait mesurer la corrélation des erreurs sur des tickets déjà priorisés, comparer au votant <code>NEUTRAL</code> seul (le vote coûte quatre appels par ticket) et décider quoi faire quand un votant échoue.
 </Note>
 
 <DecisionCard accent="green" items={[
