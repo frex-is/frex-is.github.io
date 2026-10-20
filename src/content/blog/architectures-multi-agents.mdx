@@ -148,6 +148,10 @@ import busBus from '@/examples/message-bus/bus.py?raw'
 import busSchemas from '@/examples/message-bus/schemas.py?raw'
 import busPrompts from '@/examples/message-bus/prompts.py?raw'
 import busLlm from '@/examples/message-bus/llm.py?raw'
+import evaluatorMain from '@/examples/evaluator-optimizer/main.py?raw'
+import evaluatorSchemas from '@/examples/evaluator-optimizer/schemas.py?raw'
+import evaluatorPrompts from '@/examples/evaluator-optimizer/prompts.py?raw'
+import evaluatorLlm from '@/examples/evaluator-optimizer/llm.py?raw'
 
 
 <Note title="Article en cours de rédaction" variant="warning" class="mt-6">
@@ -859,6 +863,30 @@ sequenceDiagram
 
 <Note title="Limite fondamentale" variant="danger">
   Un évaluateur LLM qui relit une sortie <HighLight accent="red" bold>n'est pas une preuve de correction</HighLight>. Il peut manquer un défaut, valider sa propre erreur, ou pousser le générateur à satisfaire la grille au détriment de l'objectif réel. Le pattern semble surtout efficace <strong class="text-text-secondary">quand des critères vérifiables existent</strong> ; il paraît fragile quand l'évaluation repose sur le seul jugement du modèle.
+</Note>
+
+<Text><strong class="text-text-primary">En code.</strong> Faire écrire une fonction de calcul de panier : 10 % de remise pour les clients fidèles, port à 4,90 € offert dès 50 € après remise. L'évaluateur est <HighLight accent="green">hybride</HighLight>. D'abord du <HighLight accent="green">code</HighLight> : le code généré doit s'exécuter et passer cinq cas de test mockés, que le générateur ne voit jamais ; il ne découvre les cas limites que par le feedback. Ensuite seulement, un <HighLight accent="green">juge LLM</HighLight> relit ce que les tests ne peuvent pas vérifier : les noms portent-ils l'intention métier de la spec, ou le code est-il plein de <code>t</code> et de <code>0.9</code> ? Chaque défaut, test en échec ou nom opaque, repart vers le générateur avec sa version précédente, jusqu'à validation ou épuisement de <code>MAX_REVISIONS</code>.</Text>
+
+```mermaid
+flowchart TD
+    S["Spec"] --> G["GENERATOR<br/>Haiku · low"]
+    G -- "GeneratedCode" --> T{"run_tests()<br/>exec + TEST_CASES (code)"}
+    T -- "échecs" --> F["revision_request()<br/>spec + code + défauts"]
+    T -- "5/5" --> J{"JUDGE<br/>Sonnet · medium"}
+    J -- "NamingIssue[]" --> F
+    J -- "aucun défaut" --> OK["Livré"]
+    F -- "révision suivante<br/>(≤ MAX_REVISIONS)" --> G
+```
+
+<CodeTabs title="Exemple" files={[
+  { name: 'main.py', lang: 'python', code: evaluatorMain, description: "Les deux agents, les cas de test mockés, l'étage tests (run_tests), l'étage juge et la boucle de révision bornée par MAX_REVISIONS." },
+  { name: 'schemas.py', lang: 'python', code: evaluatorSchemas, description: "Le domaine (CustomerTier, CartTestCase) et les sorties des agents : le code généré et la liste des défauts de nommage." },
+  { name: 'prompts.py', lang: 'python', code: evaluatorPrompts, description: "La spec, le prompt neutre du générateur et la grille explicite du juge." },
+  { name: 'llm.py', lang: 'python', code: evaluatorLlm, description: 'Le même appel LLM unique que pour les patterns précédents : générateur et juge sont deux configs comme les autres.' },
+]} />
+
+<Note title="À retenir" variant="info">
+  <strong class="text-text-secondary">Le code pilote toute la boucle</strong> : quand appeler le juge, quand réviser, quand s'arrêter. Aucun LLM ne décide de la suite, et le <code>for … else</code> sur <code>MAX_REVISIONS</code> garantit l'arrêt même si le juge n'est jamais satisfait. <strong class="text-text-secondary">Vérifiable d'abord, jugement ensuite</strong> : le juge ne s'exprime que sur un code qui passe déjà ses tests, c'est le partage code vs modèle appliqué à un seul évaluateur. <strong class="text-text-secondary">Seul l'étage tests garantit quelque chose</strong>, et seulement sur les cinq cas couverts ; le verdict du juge reste une opinion. L'exemple est volontairement placé dans le meilleur des mondes : <code>exec</code> lance le code du LLM dans le process de la démo, là où la production exigerait un bac à sable isolé avec timeout, une vraie suite de tests et une mesure des faux positifs du juge.
 </Note>
 
 <DecisionCard accent="green" items={[
